@@ -2210,14 +2210,63 @@ function renderOpenedFile() {
   }
   if ($("mdToggle")) $("mdToggle").textContent = "preview";
   body.className = "code-body";
-  renderCode(file.content || "");
+  renderCode(file.content || "", file);
 }
 
-function renderCode(content) {
+const LANG_BY_EXT = {
+  js: "javascript", mjs: "javascript", cjs: "javascript", jsx: "javascript",
+  ts: "typescript", tsx: "typescript", rs: "rust", json: "json",
+  md: "markdown", mdx: "markdown", sh: "bash", bash: "bash", zsh: "bash",
+  css: "css", html: "html", htm: "html", svg: "xml", xml: "xml",
+  toml: "ini", ini: "ini", yaml: "yaml", yml: "yaml", py: "python",
+  go: "go", c: "c", h: "c", cpp: "cpp", swift: "swift", java: "java",
+  sql: "sql", lock: "ini", env: "ini",
+};
+
+/// Splits highlighted HTML into lines, reopening any span that crosses a
+/// newline. Without this a multi-line comment loses its colour after line one.
+function splitHighlighted(html) {
+  const lines = [];
+  const stack = [];
+  let cur = "";
+  const re = /<span[^>]*class="([^"]*)"[^>]*>|<\/span>|\n|[^<\n]+/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const tok = m[0];
+    if (tok === "\n") {
+      lines.push(cur + stack.map(() => "</span>").join(""));
+      cur = stack.map((cls) => `<span class="${cls}">`).join("");
+    } else if (tok === "</span>") {
+      stack.pop();
+      cur += tok;
+    } else if (tok.startsWith("<span")) {
+      stack.push(m[1]);
+      cur += tok;
+    } else {
+      cur += tok;
+    }
+  }
+  lines.push(cur);
+  return lines;
+}
+
+function renderCode(content, file) {
   const body = $("codeBody");
   if (!body) return;
   body.textContent = "";
-  const lines = content.split("\n");
+  let lines;
+  const ext = (file?.ext || file?.name?.split(".").pop() || "").toLowerCase();
+  const lang = LANG_BY_EXT[ext];
+  if (window.hljs && lang && hljs.getLanguage(lang)) {
+    try {
+      lines = splitHighlighted(hljs.highlight(content, { language: lang, ignoreIllegals: true }).value);
+    } catch {
+      lines = content.split("\n");
+    }
+  } else {
+    lines = content.split("\n");
+  }
+  const highlighted = lines !== undefined && window.hljs && lang;
   const limit = Math.min(lines.length, 12000);
   const frag = document.createDocumentFragment();
   for (let i = 0; i < limit; i++) {
@@ -2228,7 +2277,8 @@ function renderCode(content) {
     ln.textContent = String(i + 1);
     const lc = document.createElement("span");
     lc.className = "lc";
-    lc.textContent = lines[i];
+    if (highlighted) lc.innerHTML = lines[i];
+    else lc.textContent = lines[i];
     row.append(ln, lc);
     frag.append(row);
   }

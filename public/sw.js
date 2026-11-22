@@ -9,6 +9,8 @@ const SHELL = [
   "/vendor/addon-fit.js",
   "/vendor/marked.umd.js",
   "/vendor/purify.min.js",
+  "/vendor/highlight.min.js",
+  "/vendor/highlight.css",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/manifest.webmanifest",
