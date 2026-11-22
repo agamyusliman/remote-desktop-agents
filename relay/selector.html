@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0d13">
+<title>Remote Agents</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0d13;--card:#0f131b;--line:#1d2432;--fg:#e6e9ef;--muted:#8b93a3;--dim:#5f6879;--accent:#96c4ff;--accent2:#78d7fa;--ok:#6ee7a8;--bad:#fb7185}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 -apple-system,system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.head{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.head img{width:30px;height:30px;display:block}
+.head b{flex:1;font-size:15px;letter-spacing:-.02em}
+.head small{color:var(--dim);font-size:10.5px}
+.body{flex:1;min-height:0;overflow-y:auto;padding:0 14px 14px;display:flex;flex-direction:column;gap:12px}
+
+/* camera */
+.cam{position:relative;border-radius:16px;overflow:hidden;background:#05070b;aspect-ratio:3/4;max-height:52vh;display:none}
+.cam.on{display:block}
+.cam video{width:100%;height:100%;object-fit:cover;display:block}
+.cam canvas{display:none}
+.frame{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.frame i{position:absolute;width:34px;height:34px;border:3px solid var(--accent);border-radius:6px}
+.frame i:nth-child(1){top:18%;left:14%;border-right:0;border-bottom:0}
+.frame i:nth-child(2){top:18%;right:14%;border-left:0;border-bottom:0}
+.frame i:nth-child(3){bottom:18%;left:14%;border-right:0;border-top:0}
+.frame i:nth-child(4){bottom:18%;right:14%;border-left:0;border-top:0}
+.cam-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#dfe7f5cc;font-size:11px;text-shadow:0 1px 4px #000}
+.cam-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;border:0;background:#0009;color:#fff;font-size:16px;backdrop-filter:blur(6px)}
+
+/* actions */
+.scan{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#041628;font-size:14px;font-weight:750}
+.scan svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.scan:disabled{opacity:.55}
+.or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:10.5px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.field{display:flex;gap:8px}
+.field input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);font-size:16px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;outline:none}
+.field input:focus{border-color:var(--accent2)}
+.field button{flex:0 0 auto;padding:0 18px;border:0;border-radius:12px;background:#16202e;color:var(--fg);font-weight:700;font-size:13px}
+
+/* devices */
+.sec{display:flex;flex-direction:column;gap:6px}
+.sec h2{margin:0;color:var(--dim);font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 2px 0}
+.row{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);text-align:left}
+.row:active{background:#151d2a}
+.dot{width:8px;height:8px;border-radius:50%;background:#4a5160;flex:0 0 auto}
+.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.rmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.rmain b{font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rmain span{color:var(--dim);font:10.5px/1.4 ui-monospace,Menlo,monospace}
+.chev{color:var(--dim);font-size:18px;line-height:1}
+.empty{padding:16px;border:1px dashed var(--line);border-radius:12px;color:var(--dim);font-size:11.5px;text-align:center;line-height:1.6}
+.msg{min-height:16px;margin:0;font-size:11.5px;color:var(--bad)}
+.msg.ok{color:var(--ok)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header class="head">
+  <img src="/icons/logo-96.png" alt="">
+  <div style="flex:1;min-width:0">
+    <b>Remote Agents</b>
+    <div><small id="hua">Hubungkan perangkat</small></div>
+  </div>
+</header>
+
+<div class="body">
+  <div id="cam" class="cam">
+    <video id="video" playsinline muted></video>
+    <canvas id="canvas"></canvas>
+    <div class="frame"><i></i><i></i><i></i><i></i></div>
+    <div class="cam-hint">Arahkan ke QR di app desktop</div>
+    <button id="camClose" class="cam-close" aria-label="Tutup">✕</button>
+  </div>
+
+  <button id="scanBtn" class="scan">
+    <svg viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+    Scan QR dengan kamera
+  </button>
+
+  <div class="or"><span>atau masukkan kode</span></div>
+
+  <form id="codeForm" class="field">
+    <input id="code" placeholder="ABC-123" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button type="submit">Lanjut</button>
+  </form>
+
+  <p id="msg" class="msg"></p>
+
+  <section id="devices" class="sec hidden">
+    <h2>Perangkat</h2>
+    <div id="list"></div>
+  </section>
+</div>
+
+<script src="/vendor/jsQR.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const msg = (text, ok = false) => { const el = $("msg"); el.textContent = text; el.classList.toggle("ok", ok); };
+
+const params = new URLSearchParams(location.search);
+if (params.get("switch") === "1" || params.get("forget") === "1") {
+  document.cookie = "ra_device=; path=/; max-age=0; SameSite=Lax; Secure";
+  document.cookie = "ra_device=; path=/; max-age=0; SameSite=Lax";
+}
+if (params.get("moved") === "1") msg("Sesi dipindahkan dari perangkat lain.");
+if (params.get("offline") === "1") {
+  msg("Perangkat sedang offline. Nyalakan app desktop, lalu sambung ulang.");
+}
+
+/* ---------- device list (owner only) ---------- */
+async function loadDevices() {
+  try {
+    const res = await fetch("/api/devices", { cache: "no-store" });
+    if (!res.ok) return;              // anonymous: nothing to show, by design
+    const data = await res.json();
+    const devices = (data.devices || []).filter((d) => d.key);
+    if (!devices.length) return;
+    $("devices").classList.remove("hidden");
+    const list = $("list");
+    list.textContent = "";
+    for (const device of devices) {
+      const row = document.createElement("button");
+      row.className = "row";
+      row.innerHTML = `<span class="dot"></span><span class="rmain"><b></b><span></span></span><span class="chev">›</span>`;
+      row.querySelector("b").textContent = device.name || device.id || device.key;
+      row.querySelector(".rmain span").textContent = device.id || device.key;
+      row.addEventListener("click", () => {
+        document.cookie = `ra_device=${device.key}; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `ra_device=${device.key}; path=/; max-age=31536000; SameSite=Lax; Secure`;
+        location.href = device.id ? `/auth?id=${encodeURIComponent(device.id)}` : "/";
+      });
+      list.append(row);
+      fetch(`/probe/${encodeURIComponent(device.key)}`, { cache: "no-store" })
+        .then((r) => row.querySelector(".dot").classList.toggle("on", r.ok))
+        .catch(() => {});
+    }
+  } catch {}
+}
+loadDevices();
+
+/* ---------- in-page camera scanner ---------- */
+let stream = null;
+let raf = 0;
+
+async function startCamera() {
+  msg("");
+  $("scanBtn").disabled = true;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 1280 } },
+      audio: false,
+    });
+    const video = $("video");
+    video.srcObject = stream;
+    await video.play();
+    $("cam").classList.add("on");
+    tick();
+  } catch (err) {
+    const denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+    msg(denied ? "Izin kamera ditolak. Aktifkan izin kamera untuk situs ini." : "Kamera tidak tersedia: " + err.message);
+    $("scanBtn").disabled = false;
+  }
+}
+
+function stopCamera() {
+  cancelAnimationFrame(raf);
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  stream = null;
+  $("cam").classList.remove("on");
+  $("scanBtn").disabled = false;
+}
+
+function tick() {
+  const video = $("video");
+  const canvas = $("canvas");
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    const w = video.videoWidth, h = video.videoHeight;
+    if (w && h) {
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, w, h);
+      const img = ctx.getImageData(0, 0, w, h);
+      const found = window.jsQR ? window.jsQR(img.data, w, h, { inversionAttempts: "dontInvert" }) : null;
+      if (found && found.data) {
+        stopCamera();
+        handlePayload(found.data);
+        return;
+      }
+    }
+  }
+  raf = requestAnimationFrame(tick);
+}
+
+$("scanBtn").addEventListener("click", startCamera);
+$("camClose").addEventListener("click", stopCamera);
+document.addEventListener("visibilitychange", () => { if (document.hidden) stopCamera(); });
+
+/* ---------- handle a scanned payload ---------- */
+function handlePayload(text) {
+  const raw = String(text || "").trim();
+  let link = raw;
+  let code = "";
+  try {
+    const url = new URL(raw);
+    code = (url.hash.match(/[#&]c=([A-Za-z0-9]+)/) || [])[1] || url.searchParams.get("c") || "";
+    if (!code) {
+      const m = url.pathname.match(/\/pair\/([A-Za-z0-9]+)/);
+      code = m ? m[1] : "";
+    }
+  } catch {
+    // Plain code, e.g. "ABC-123"
+    code = raw.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  }
+  code = String(code || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  if (!code) {
+    msg("QR tidak dikenali. Pastikan itu QR dari app desktop.");
+    return;
+  }
+  $("code").value = code.slice(0, 3) + (code.length > 3 ? "-" + code.slice(3) : "");
+  redeem(code, link);
+}
+
+async function redeem(code, link) {
+  msg("menghubungkan…");
+  let target = link;
+
+  // Follow the scanned link only to let nginx pin the right device cookie.
+  // Opening it in the browser would land the user back on /pair, which is the
+  // page they just came from — the reason scanning "looped".
+  if (target && target.startsWith("http")) {
+    try {
+      const res = await fetch(target, { credentials: "include", cache: "no-store" });
+      if (res.ok) {
+        const html = await res.text();
+        const id = (html.match(/data-device-id="(\d+)"/) || [])[1];
+        if (id) {
+          location.replace(`/auth?id=${id}`);
+          return;
+        }
+      }
+    } catch {}
+  }
+
+  try {
+    const res = await fetch("/api/pair/claim" + keySuffix(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ code, name: deviceLabel(), platform: "web" }),
+    });
+    if (res.status === 429) { msg("Terlalu banyak percobaan. Tunggu sebentar."); return; }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      msg("Kode salah atau kedaluwarsa. Buat kode baru di app desktop.");
+      return;
+    }
+    try {
+      localStorage.setItem("ra.client", JSON.stringify({ id: data.clientId, device: data.deviceId, name: data.deviceName, at: Date.now() }));
+    } catch {}
+    msg(`Terhubung ke ${data.deviceName}`, true);
+    // Go straight into the app, not back to this picker.
+    const next = data.deviceId
+      ? `/auth?id=${encodeURIComponent(data.deviceId)}`
+      : "/";
+    setTimeout(() => location.replace(next), 700);
+  } catch (err) {
+    msg("Gagal menghubungi relay: " + err.message);
+  }
+}
+
+/// The scanned link carries ?k=<relay key>; keep it for the claim call.
+function keySuffix() {
+  const k = new URLSearchParams(location.search).get("k");
+  return k ? `?k=${encodeURIComponent(k)}` : "";
+}
+
+function deviceLabel() {
+  const ua = navigator.userAgent;
+  return /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : "Browser";
+}
+
+$("codeForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const code = $("code").value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  if (code.length < 4) { msg("Kode terlalu pendek."); return; }
+  redeem(code, "");
+});
+
+$("code").addEventListener("input", (event) => {
+  const raw = event.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6);
+  event.target.value = raw.length > 3 ? `${raw.slice(0, 3)}-${raw.slice(3)}` : raw;
+});
+</script>
+</body>
+</html>

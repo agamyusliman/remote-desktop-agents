@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0d13">
+<title>Remote Agents</title>
+<link rel="stylesheet" href="/setup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-connect" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/><circle cx="12" cy="12" r="2.5"/></symbol>
+<symbol id="i-devices" viewBox="0 0 24 24"><rect x="3" y="4" width="10" height="16" rx="2"/><rect x="15" y="8" width="6" height="12" rx="1.5"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.36a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64h.08A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.64a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9v.08A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+</defs></svg>
+<div class="app">
+  <aside class="rail">
+    <div class="rail-head">
+      <img src="/icons/logo-96.png" alt="" width="30" height="30">
+      <div class="rail-title">
+        <b>Remote Agents</b>
+        <span id="headSub">memuat…</span>
+      </div>
+    </div>
+
+    <nav class="rail-nav" role="tablist">
+      <button class="nav active" data-tab="connect" role="tab"><svg class="ico" width="16" height="16"><use href="#i-connect"/></svg><span>Hubungkan</span></button>
+      <button class="nav" data-tab="devices" role="tab"><svg class="ico" width="16" height="16"><use href="#i-devices"/></svg><span>Perangkat</span></button>
+      <button class="nav" data-tab="settings" role="tab"><svg class="ico" width="16" height="16"><use href="#i-settings"/></svg><span>Pengaturan</span></button>
+    </nav>
+
+    <div class="rail-foot">
+      <span id="livePill" class="pill">—</span>
+      <span id="footVer" class="ver"></span>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <!-- ---------- Hubungkan (default view) ---------- -->
+    <section class="pane active" id="pane-connect">
+      <div class="two">
+        <div class="pair-card">
+          <div id="qrBox" class="qr is-empty">
+            <img class="qr-ghost" src="/icons/logo-192.png" alt="" width="72" height="72">
+            <span>Belum ada kode</span>
+          </div>
+          <div id="pairCode" class="code">— — — —</div>
+          <div id="pairHint" class="hint">Tekan tombol untuk membuat kode</div>
+          <button id="pairNew" class="btn primary wide">Buat kode pairing</button>
+        </div>
+
+        <div class="col">
+          <div class="card">
+            <div class="card-row">
+              <div><span class="k">Perangkat ini</span><b id="connName">—</b></div>
+              <span class="pill" id="connPill">—</span>
+            </div>
+            <div class="card-row">
+              <div><span class="k">ID</span><b id="deviceId" class="mono">—</b></div>
+              <button class="link" id="copyId">salin</button>
+            </div>
+            <div class="card-row">
+              <div><span class="k">Alamat relay</span><b id="connRelay" class="mono">—</b></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-row">
+              <div><span class="k">Alamat lokal</span><b id="connLan" class="mono">—</b></div>
+            </div>
+            <div class="card-row">
+              <div><span class="k">omp</span><b id="connOmp">—</b></div>
+            </div>
+            <div class="card-row">
+              <div><span class="k">Workspace</span><b id="connCwd" class="mono">—</b></div>
+            </div>
+          </div>
+
+          <div class="hint-list">
+            <div class="hl"><b>1</b> Tekan “Buat kode pairing”.</div>
+            <div class="hl"><b>2</b> Buka app mobile, scan QR.</div>
+            <div class="hl"><b>3</b> Kunci tersimpan di HP dan di Mac ini.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Perangkat ---------- -->
+    <section class="pane" id="pane-devices">
+      <div class="pad"><div id="clients" class="rows">—</div></div>
+    </section>
+
+    <!-- ---------- Pengaturan ---------- -->
+    <section class="pane" id="pane-settings">
+      <form id="cfgForm" class="settings" autocomplete="off">
+        <div class="set-col">
+          <section class="set-group">
+            <h3>Perizinan</h3>
+            <div class="rows" id="permRows">—</div>
+          </section>
+
+          <section class="set-group">
+            <h3>Streaming</h3>
+            <div class="grid3">
+              <label>FPS<select name="captureFps">
+                <option value="3">3</option><option value="5">5</option><option value="8">8</option>
+                <option value="12">12</option><option value="15">15</option>
+              </select></label>
+              <label>Kualitas<select name="jpegQuality">
+                <option value="45">45</option><option value="55">55</option><option value="62">62</option>
+                <option value="72">72</option><option value="82">82</option>
+              </select></label>
+              <label>Resolusi<select name="resolution">
+                <option value="720p">720p</option><option value="1080p">1080p</option>
+              </select></label>
+            </div>
+          </section>
+
+          <section class="set-group">
+            <h3>Sistem</h3>
+            <label class="checkrow"><span class="ck-text">Wajib pairing <em>ID saja tidak bisa login</em></span><input type="checkbox" name="requirePairing"></label>
+            <label class="checkrow"><span class="ck-text">Jalankan otomatis <em>Saat login Mac</em></span><input type="checkbox" id="prefAutostart"></label>
+          </section>
+        </div>
+
+        <div class="set-col">
+          <section class="set-group">
+            <h3>Koneksi</h3>
+            <div class="grid2">
+              <label>Port<input name="port" type="number" min="1024" max="65535"></label>
+              <label>Durasi login (hari)<input name="sessionTtlDays" type="number" min="1" max="3650"></label>
+            </div>
+            <label>URL publik<input name="publicUrl" placeholder="https://remote.example.com"></label>
+            <div class="grid2">
+              <label>Key relay<input name="relayKey" placeholder="a" maxlength="8"></label>
+              <label>Nama perangkat<input name="deviceName" maxlength="48" placeholder="MacBook Pro"></label>
+            </div>
+          </section>
+
+          <section class="set-group">
+            <h3>Workspace</h3>
+            <label>Folder project omp
+              <span class="pick">
+                <input name="ompCwd" placeholder="/Users/kamu">
+                <button type="button" class="pick-btn" data-pick="ompCwd" title="Pilih folder">Pilih</button>
+              </span>
+            </label>
+            <label>Folder yang boleh diakses
+              <span class="pick">
+                <input name="allowedRoots" placeholder="/Users/kamu/Documents">
+                <button type="button" class="pick-btn" data-pick="allowedRoots" title="Pilih folder">Pilih</button>
+              </span>
+            </label>
+            <label>Binary omp<input name="ompBin" placeholder="/opt/homebrew/bin/omp"></label>
+          </section>
+
+          <section class="set-group actions-group">
+            <p id="cfgMsg" class="msg"></p>
+            <p id="restartHint" class="hint-line hidden">Perubahan ini butuh restart agar berlaku.</p>
+            <button type="submit" class="btn primary wide" id="saveBtn">Simpan perubahan</button>
+            <p id="footInfo" class="foot">—</p>
+          </section>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+<div id="picker" class="picker hidden">
+  <div class="picker-card">
+    <header class="picker-head">
+      <b id="pickerTitle">Pilih folder</b>
+      <button type="button" id="pickerClose" class="link"><svg class="bi" width="14" height="14"><use href="#i-close"/></svg> tutup</button>
+    </header>
+    <div class="picker-path" id="pickerPath"></div>
+    <div class="picker-body" id="pickerList"></div>
+    <footer class="picker-foot">
+      <button type="button" id="pickerUp" class="btn ghost"><svg class="bi" width="14" height="14"><use href="#i-up"/></svg> naik</button>
+      <button type="button" id="pickerHome" class="btn ghost"><svg class="bi" width="14" height="14"><use href="#i-home"/></svg> home</button>
+      <button type="button" id="pickerChoose" class="btn primary"><svg class="bi" width="14" height="14"><use href="#i-check"/></svg> Pilih folder ini</button>
+    </footer>
+  </div>
+</div>
+<script src="/setup.js"></script>
+</body>
+</html>

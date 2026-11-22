@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#0a0d13">
+<title>Remote Agents</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Remote Agents">
+<link rel="stylesheet" href="/vendor/xterm.css">
+<link rel="stylesheet" href="/style.css">
+<style id="shell-critical">
+@media (max-width: 1100px) and (pointer: coarse), (max-width: 899px) {
+  .bottom-nav { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; position: relative; z-index: 22; flex: 0 0 auto; min-height: 56px; }
+  .sidebar { display: none !important; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
+    <symbol id="i-md" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M6.5 15v-5l2 2.5 2-2.5v5M16 10v5M14 13l2 2 2-2"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="M21 16l-5-5-7 7"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></symbol>
+    <symbol id="i-exit" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-full" viewBox="0 0 24 24"><path d="M8 3H4v4M16 3h4v4M8 21H4v-4M20 17v4h-4"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><path d="M4 4v16M4 9h7M4 15h7"/><rect x="11" y="6" width="9" height="6" rx="1.5"/><rect x="11" y="12" width="9" height="6" rx="1.5"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 1.8"/></symbol>
+  </defs>
+</svg>
+<div id="login" class="login hidden">
+  <div class="login-sheet">
+    <header class="lg-head">
+      <img class="lg-logo" src="/icons/logo-96.png" alt="" width="32" height="32">
+      <div class="lg-title">
+        <b>Remote Agents</b>
+        <span>Remote desktop</span>
+      </div>
+      <button type="button" id="rdAdd" class="lg-icon" title="Tambah perangkat" aria-label="Tambah perangkat">+</button>
+    </header>
+
+    <div class="lg-scroll">
+      <div id="recentDevices" class="device-list"></div>
+      <div id="rdList" class="hidden"></div>
+    </div>
+
+    <form id="loginForm" class="lg-form" autocomplete="off">
+      <div class="lg-field">
+        <input id="token" type="text" inputmode="text" autocapitalize="characters"
+               autocomplete="one-time-code" placeholder="ID atau kode" spellcheck="false" maxlength="16">
+        <button type="submit" class="lg-go" title="Masuk" aria-label="Masuk">→</button>
+      </div>
+      <button type="button" id="scanBtn" class="lg-scan">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 8h3v3H8zM13 8h3v3h-3zM8 13h3v3H8zM13 13h3v3h-3z" fill="currentColor"/></svg>
+        Scan QR
+      </button>
+      <p id="loginErr" class="lg-err"></p>
+      <input id="qrFile" type="file" accept="image/*" hidden>
+      <input id="deviceHint" type="hidden">
+    </form>
+  </div>
+</div>
+
+<div id="app" class="shell hidden">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-mark" src="/icons/icon-96.png" alt="" width="26" height="26">
+      <span class="brand-text">remot-agent</span>
+      <button id="sideToggle" class="side-toggle" title="Collapse sidebar">«</button>
+    </div>
+    <nav class="side-nav">
+      <button class="nav-btn active" data-page="home" title="Home">
+        <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Home
+      </button>
+      <button class="nav-btn" data-page="remote" title="Remote">
+        <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Remote
+      </button>
+      <button class="nav-btn" data-page="system" title="System">
+        <svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>System
+      </button>
+      <button class="nav-btn" data-page="projects" title="Projects">
+        <svg viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/></svg>Projects
+      </button>
+      <button class="nav-btn" data-page="files" title="Files">
+        <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/></svg>Files
+      </button>
+      <button class="nav-btn" data-page="settings" title="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.36a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64h.08A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.64a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9v.08A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>Settings
+      </button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-status"><span class="dot"></span><span id="sideStatus">offline</span></div>
+      <div class="side-note" id="sideNote">omp · —</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="top-title" id="pageTitle">Home</div>
+      <div class="top-actions">
+        <div id="status" class="status"><span class="dot"></span><span id="statusText">connecting</span></div>
+        <button id="btnInstall" class="icon-btn hidden" title="Install app">⇩</button>
+      </div>
+    </header>
+    <div class="content">
+      <section id="view-home" class="view active">
+        <div class="hero card">
+          <div class="hero-top"><span class="eyebrow">DESKTOP</span><span id="heroState" class="pill">connecting</span></div>
+          <h1 id="homeHost">MacBook Pro</h1>
+          <p id="homeSub">omp ready · remote desktop siap</p>
+          <div class="hero-actions">
+            <button class="btn primary" data-page="remote">Buka remote</button>
+            <button class="btn ghost" data-page="projects">Projects</button>
+          </div>
+          <div class="hero-meta">
+            <span id="homeProject">—</span>
+            <span id="homeUptime">—</span>
+          </div>
+        </div>
+
+        <div class="mini-grid">
+          <div class="mini card"><span>CPU</span><b id="homeCpu">—</b><div class="mini-bar"><i id="homeCpuBar"></i></div></div>
+          <div class="mini card"><span>RAM</span><b id="homeRam">—</b><div class="mini-bar"><i id="homeRamBar"></i></div></div>
+          <div class="mini card"><span>DISK</span><b id="homeDisk">—</b><div class="mini-bar"><i id="homeDiskBar"></i></div></div>
+          <div class="mini card"><span>NET</span><b id="homeNet">—</b><div class="mini-sub" id="homeNetSub">↓ — · ↑ —</div></div>
+        </div>
+
+        <div class="section-head"><h2>Projects</h2><button class="link" data-page="projects">Semua</button></div>
+        <div id="homeProjects" class="project-cards"></div>
+
+      </section>
+
+      <section id="view-remote" class="view">
+        <div class="remote-head">
+          <div class="seg" id="segLayout" role="tablist" aria-label="Layout">
+            <button data-layout="term" class="active" role="tab">CLI</button>
+            <button data-layout="screen" role="tab">Screen</button>
+            <button data-layout="files" role="tab">Files</button>
+            <button data-layout="split" role="tab">Split</button>
+          </div>
+          <div class="remote-tools">
+            <button id="btnSessions" class="chip icon-chip" title="Ganti sesi" aria-label="Ganti sesi"><svg class="ico"><use href="#i-history"/></svg></button>
+            <button id="remoteProject" class="chip project-pill" title="Ganti project">
+              <svg class="ico" width="12" height="12"><use href="#i-folder"/></svg>
+              <span id="remoteProjectName">—</span>
+            </button>
+            <button id="btnReloadApp" class="chip icon-chip" title="Muat ulang aplikasi" aria-label="Muat ulang aplikasi"><svg class="ico" width="15" height="15"><use href="#i-refresh"/></svg></button>
+            <button id="btnKbd" class="chip" title="Keyboard ke layar">⌨</button>
+          </div>
+        </div>
+
+        <div id="remoteGrid" class="remote-grid">
+          <section id="screenPanel" class="panel screen-panel">
+            <div class="panel-head">
+              <span class="label"><span id="liveDot" class="live-dot"></span>SCREEN</span>
+              <span id="screenMeta" class="meta">—</span>
+              <div class="panel-actions">
+                <button id="btnInputMode" class="chip mode active" data-input="pad" title="Mode touchpad: geser = gerakkan kursor">pad</button>
+                <button class="chip mode active" data-btn="left" title="Tap = klik kiri">L</button>
+                <button class="chip mode" data-btn="right" title="Tap = klik kanan">R</button>
+                <button id="btnClick" class="chip" title="Klik di posisi kursor">klik</button>
+                <button id="btnCkbd" class="chip" title="Keyboard popup">⌨</button>
+                <button id="btnScreenFull" class="chip" title="Fullscreen">⛶</button>
+              </div>
+            </div>
+            <div class="fs-exit fs-screen">
+              <button id="fsKeys" class="chip" title="Keyboard">⌨</button>
+              <button id="fsExitScreen" class="chip fs-exit-btn" title="Keluar fullscreen" aria-label="Keluar fullscreen"><svg class="ico"><use href="#i-exit"/></svg> exit</button>
+            </div>
+            <div id="screenWrap" class="screen-wrap">
+              <canvas id="screen"></canvas>
+              <div id="hint" class="hint">tap klik · tahan drag · dua jari scroll</div>
+              <textarea id="kbd" class="kbd" autocapitalize="off" autocomplete="off" spellcheck="false" aria-label="Keyboard layar"></textarea>
+            </div>
+          </section>
+
+          <div id="divider" class="divider"><span></span></div>
+
+          <section id="termPanel" class="panel chat-panel">
+
+            <div class="fs-exit fs-term">
+              <button id="fsExitTerm" class="chip fs-exit-btn" title="Keluar fullscreen" aria-label="Keluar fullscreen"><svg class="ico"><use href="#i-exit"/></svg> exit</button>
+            </div>
+
+            <div id="termView" class="term-view">
+              <div class="term-zoom">
+                <span class="meta" id="termSizeLabel">tui</span>
+                <button id="termScrollUp" class="chip" title="Gulir ke atas">▲</button>
+                <button id="termScrollDown" class="chip" title="Gulir ke bawah">▼</button>
+                <button id="termScrollEnd" class="chip" title="Ke baris terakhir">⤓</button>
+                <button id="termMinus" class="chip" title="Perkecil font">A−</button>
+                <button id="termPlus" class="chip" title="Perbesar font">A+</button>
+              </div>
+              <div id="keybar" class="keybar">
+                <button data-k="esc" tabindex="-1">esc</button>
+                <button data-k="tab" tabindex="-1">tab</button>
+                <button data-k="ctrl" id="btnCtrl" class="toggle" tabindex="-1">ctrl</button>
+                <span class="keysep"></span>
+                <button data-k="up" tabindex="-1">↑</button>
+                <button data-k="down" tabindex="-1">↓</button>
+                <button data-k="left" tabindex="-1">←</button>
+                <button data-k="right" tabindex="-1">→</button>
+                <button data-k="home" tabindex="-1">home</button>
+                <button data-k="end" tabindex="-1">end</button>
+                <button data-k="pgup" tabindex="-1">pg↑</button>
+                <button data-k="pgdn" tabindex="-1">pg↓</button>
+                <button data-k="del" tabindex="-1">del</button>
+                <span class="keysep"></span>
+                <button data-k="ctrlc" tabindex="-1">^C</button>
+                <button data-k="ctrld" tabindex="-1">^D</button>
+                <button data-k="ctrlz" tabindex="-1">^Z</button>
+                <button data-k="ctrll" tabindex="-1">^L</button>
+                <button data-k="ctrlr" tabindex="-1">^R</button>
+                <button data-k="ctrlu" tabindex="-1">^U</button>
+                <button data-k="enter" tabindex="-1">⏎</button>
+              </div>
+              <div id="term" class="term"></div>
+              <div id="termEmpty" class="term-empty hidden">
+                <div class="te-inner">
+                  <div class="te-head">
+                    <div class="te-title" id="teTitle">Pilih sesi</div>
+                    <div class="te-project" id="teProject">—</div>
+                    <button type="button" id="termNew" class="te-add" title="Mulai sesi baru" aria-label="Mulai sesi baru">+</button>
+                  </div>
+                  <div id="termSessions" class="te-sessions"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="filesPane" class="files-pane hidden">
+          <div class="files-bar">
+            <select id="filesProject" class="chip files-project"></select>
+            <button id="filesRoot" class="icon-chip" title="Home folder (~)" aria-label="Home folder"><svg><use href="#i-home"/></svg></button>
+            <div id="filesBreadcrumb" class="crumbs"></div>
+            <button id="filesTreeToggle" class="icon-chip" title="Tree" aria-label="Tree"><svg><use href="#i-tree"/></svg></button>
+          </div>
+          <div id="filesBody" class="files-body">
+            <aside id="fileTree" class="file-tree">
+              <div id="treeList" class="tree-list"></div>
+            </aside>
+            <div class="code-pane">
+              <div class="code-head">
+                <button id="fileBack" class="icon-chip mobile-only" title="Kembali ke tree" aria-label="Kembali ke tree"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <span id="fileName" class="file-name">—</span>
+                <span id="fileMeta" class="meta"></span>
+                <div class="code-actions">
+                  <button id="mdToggle" class="chip hidden">preview</button>
+                  <button id="fileOpenRaw" class="icon-chip" title="Buka di tab baru" aria-label="Buka file"><svg><use href="#i-file"/></svg></button>
+                </div>
+              </div>
+              <div id="codeBody" class="code-body">
+                <div class="empty">Pilih file dari tree.</div>
+              </div>
+            </div>
+          </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-system" class="view">
+        <div class="section-head">
+          <h2>System</h2>
+          <div class="head-actions"><span id="statsHost" class="meta">—</span><button id="statsRefresh" class="icon-chip" title="Refresh" aria-label="Refresh"><svg><use href="#i-refresh"/></svg></button></div>
+        </div>
+        <div class="gauges">
+          <div class="gauge card"><div class="g-top"><span>CPU</span><b id="gCpu">—</b></div><div class="bar"><i id="bCpu"></i></div><div id="gCores" class="cores"></div></div>
+          <div class="gauge card"><div class="g-top"><span>RAM</span><b id="gRam">—</b></div><div class="bar"><i id="bRam"></i></div><div id="gSwap" class="g-sub">swap —</div></div>
+          <div class="gauge card"><div class="g-top"><span>DISK</span><b id="gDisk">—</b></div><div class="bar"><i id="bDisk"></i></div><div id="gDiskAbs" class="g-sub">—</div></div>
+          <div class="gauge card"><div class="g-top"><span>NET</span><b id="gNet">—</b></div><div class="g-sub" id="gNetAbs">↓ — · ↑ —</div></div>
+        </div>
+        <div class="procs-head"><span>TOP PROCESSES</span><span>CPU · MEM</span></div>
+        <div id="statsProcs" class="procs"></div>
+        <p id="statsFoot" class="hint-line">—</p>
+      </section>
+
+      <section id="view-projects" class="view">
+        <div class="section-head">
+          <h2>Projects</h2>
+          <button type="button" id="addProjectBtn" class="te-add" title="Tambah project" aria-label="Tambah project">+</button>
+        </div>
+        <div id="projectList" class="project-list-page"></div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="card settings-card">
+          <h2>Streaming</h2>
+          <div class="set-row"><div><b>Target FPS</b><small>Batas frame yang diproses di perangkat ini.</small></div>
+            <select id="prefFps"><option value="3">3 fps</option><option value="5">5 fps</option><option value="8">8 fps</option><option value="12">12 fps</option></select>
+          </div>
+          <div class="set-row"><div><b>Pause saat tidak di Remote</b><small>Stream berhenti total jika tab lain / layar mati.</small></div><span class="pill ok">aktif</span></div>
+          <div class="set-row"><div><b>Kualitas capture</b><small id="prefQuality">—</small></div><span class="pill">server</span></div>
+        </div>
+
+        <div class="card settings-card">
+          <h2>Terminal</h2>
+          <div class="set-row"><div><b>Ukuran font</b><small>Berlaku di perangkat ini.</small></div><span id="prefFontVal" class="meta">12.5</span></div>
+          <input id="prefFont" class="range" type="range" min="5" max="18" step="0.5">
+          <label class="check"><input type="checkbox" id="prefKeybar"> Tampilkan quick key bar</label>
+        </div>
+
+        <div class="card settings-card">
+          <h2>Device</h2>
+          <label class="check"><input type="checkbox" id="prefAwake"> Keep screen awake saat remote</label>
+          <div class="set-row"><div><b>Muat ulang aplikasi</b><small>Ambil versi terbaru dari server.</small></div>
+            <button id="reloadAppBtn" class="btn ghost small">Reload</button></div>
+          <div class="set-row"><div><b>Bersihkan cache</b><small>Hapus cache offline lalu muat ulang.</small></div>
+            <button id="clearCacheBtn" class="btn ghost small">Bersihkan</button></div>
+          <p class="hint-line" id="settingsInfo">—</p>
+        </div>
+
+        <div class="card settings-card">
+          <h2>Akses jauh</h2>
+          <div class="set-row"><div><b>URL publik</b><small id="settingsPublic">—</small></div><span id="settingsTunnelState" class="pill">—</span></div>
+          <p class="hint-line">Jalankan <code>scripts/tunnel-daemon.sh</code>; URL ditulis ke data/tunnel-url. Token tetap wajib.</p>
+          <p class="hint-line">Lupa token? Di Mac: <code>./scripts/show-access.sh</code>. Rotasi + logout semua: <code>./scripts/rotate-token.sh --restart</code>.</p>
+          <div class="config-grid" id="configGrid">—</div>
+        </div>
+
+        <div class="card settings-card">
+          <h2>Perangkat</h2>
+          <div class="set-row"><div><b>Durasi login</b><small id="ttlInfo">—</small></div><span class="pill" id="ttlPill">—</span></div>
+          <div class="set-row"><div><b>Ganti perangkat</b><small>Buka daftar perangkat, lalu pilih yang mau dipakai.</small></div><button id="switchDeviceBtn" class="btn ghost small">Ganti</button></div>
+          <p class="hint-line">Keamanan perangkat diatur dari app desktop: hapus perangkat di daftar sana untuk memutus akses.</p>
+        </div>
+
+        <div class="card settings-card">
+          <h2>Tentang</h2>
+          <div class="set-row"><div><b>Remote Agents</b><small>Rust · ScreenCaptureKit/scap · portable-pty · xterm.js</small></div><span class="pill">v0.1</span></div>
+          <p class="hint-line">URL akses = kontrol penuh. Jangan dibagikan.</p>
+        </div>
+      </section>
+    </div>
+
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="home" title="Home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span>Home</span></button>
+      <button class="nav-btn" data-page="projects" title="Projects"><svg viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/></svg><span>Projects</span></button>
+      <button class="nav-btn" data-page="remote" title="Remote"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Remote</span></button>
+      <button class="nav-btn" data-page="system" title="System"><svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg><span>System</span></button>
+      <button class="nav-btn" data-page="settings" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.36a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64h.08A1.7 1.7 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.64a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9v.08A1.7 1.7 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
+</nav>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<div id="dlgModal" class="scan-modal hidden">
+  <div class="dlg-card" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <h3 id="dlgTitle"></h3>
+    <p id="dlgMsg" class="dlg-msg"></p>
+    <input id="dlgInput" class="dlg-input" type="text" autocomplete="off" spellcheck="false">
+    <div class="dlg-actions">
+      <button type="button" id="dlgCancel" class="btn ghost">Batal</button>
+      <button type="button" id="dlgOk" class="btn primary">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="browseModal" class="scan-modal hidden">
+  <div class="browse-card">
+    <div class="browse-head">
+      <button type="button" id="browseUp" class="chip" aria-label="Naik satu folder">↑</button>
+      <div id="browsePath" class="browse-path">~</div>
+      <button type="button" id="browseClose" class="chip" aria-label="Tutup">✕</button>
+    </div>
+    <div id="browseList" class="browse-list"></div>
+    <div class="browse-foot">
+      <button type="button" id="browsePick" class="btn primary">Pilih folder ini</button>
+    </div>
+  </div>
+</div>
+
+<div id="scanModal" class="scan-modal hidden">
+    <div class="scan-card">
+      <div class="scan-head">
+        <b>Scan QR desktop</b>
+        <button type="button" id="scanClose" class="chip" aria-label="Tutup">✕</button>
+      </div>
+      <div class="scan-frame">
+        <video id="scanVideo" playsinline muted autoplay></video>
+        <div class="scan-line"></div>
+      </div>
+      <p id="scanHint">Arahkan kamera ke QR di jendela app desktop.</p>
+      <div class="scan-actions">
+        <button type="button" id="scanFallback" class="btn ghost small">Pilih foto QR</button>
+      </div>
+    </div>
+  </div>
+<div id="ckbd" class="ckbd hidden">
+  <div class="ckbd-head">
+    <span class="label">KEYBOARD</span>
+    <span id="ckbdTarget" class="meta">terminal</span>
+    <button id="ckbdNative" class="chip" title="Keyboard native">abc</button>
+    <button id="ckbdClose" class="chip" title="Tutup">✕</button>
+  </div>
+  <div class="ckbd-grid">
+    <button data-k="esc">esc</button>
+    <button data-k="f1">F1</button><button data-k="f2">F2</button><button data-k="f3">F3</button>
+    <button data-k="f4">F4</button><button data-k="f5">F5</button><button data-k="f6">F6</button>
+    <button data-k="f7">F7</button><button data-k="f8">F8</button><button data-k="f9">F9</button>
+    <button data-k="f10">F10</button><button data-k="f11">F11</button><button data-k="f12">F12</button>
+    <button data-k="tab">tab</button>
+    <button data-k="ins">ins</button><button data-k="home">home</button><button data-k="end">end</button>
+    <button data-k="pgup">pg↑</button><button data-k="pgdn">pg↓</button><button data-k="del">del</button>
+    <button data-k="up">↑</button><button data-k="down">↓</button><button data-k="left">←</button><button data-k="right">→</button>
+    <button data-m="shift" class="mod">shift</button>
+    <button data-m="ctrl" class="mod">ctrl</button>
+    <button data-m="alt" class="mod">alt</button>
+    <button data-m="altgr" class="mod">altgr</button>
+    <button data-m="cmd" class="mod">⌘</button>
+    <button data-k="ctrlc">^C</button><button data-k="ctrld">^D</button>
+    <button data-k="ctrlz">^Z</button><button data-k="ctrll">^L</button>
+    <button data-k="ctrlr">^R</button><button data-k="ctrlu">^U</button>
+    <button data-k="ctrla">^A</button><button data-k="ctrle">^E</button>
+    <button data-k="ctrlw">^W</button><button data-k="ctrlk">^K</button>
+    <button data-k="space" class="wide">space</button>
+    <button data-k="backspace">⌫</button>
+    <button data-k="enter" class="wide">⏎</button>
+  </div>
+  <div class="ckbd-text">
+    <input id="ckbdInput" placeholder="ketik teks ke terminal…" spellcheck="false" autocapitalize="off" autocomplete="off">
+    <button id="ckbdSend" title="Kirim">↵</button>
+  </div>
+</div>
+
+<script src="/vendor/jsQR.js"></script>
+<script src="/vendor/marked.umd.js"></script>
+<script src="/vendor/purify.min.js"></script>
+<script src="/vendor/xterm.js"></script>
+<script src="/vendor/addon-fit.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# --- build output -----------------------------------------------------------
+/target/
+/dist/
+/native/build/
+*.dSYM/
+
+# --- local configuration and secrets ---------------------------------------
+.env
+.env.*
+!.env.example
+
+# Runtime state: tokens, pairing keys, device ids, the project library, logs.
+# Never publish this directory; it contains bearer credentials.
+/data/
+
+# Per-installation relay map (device keys + backend mapping).
+/relay/devices.json
+!/relay/devices.example.json
+
+# --- editor / OS noise ------------------------------------------------------
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# --- misc -------------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+*.pem
+*.key
+*.p12
