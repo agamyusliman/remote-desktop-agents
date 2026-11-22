@@ -26,6 +26,7 @@ browse project files.
 - **[security.md](security.md)** — threat model and limits.
 - **[troubleshooting.md](troubleshooting.md)** — common symptoms and their causes.
 - **[contributing.md](contributing.md)** — code rules and PR flow.
+- **[screenshots.md](screenshots.md)** — desktop app and mobile screens (3 × 2 grid).
 - **[agent-conventions.md](agent-conventions.md)** — Bun tooling conventions for automated agents.
 
 ## Design principles

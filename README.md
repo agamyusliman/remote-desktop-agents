@@ -1,24 +1,54 @@
 # Remote Agents
 
-Self-hosted remote desktop **and** `omp` chat/terminal for phone or tablet.
-Rust server + PWA. No cloud accounts, no third-party services.
+Self-hosted remote desktop **and** agent chat/terminal for your phone or tablet.
+Rust server + PWA. No cloud account, no third-party service in the loop.
 
-Control one Mac from anywhere: view the screen, move the mouse and keyboard,
-run `omp`, manage projects, and browse files — all from a phone browser
-that installs as an app.
+## The problem this solves
+
+If you build software by prompting an agent — `omp`, or any other CLI agent — the
+machine that does the work is usually the one sitting at home. The moment you
+leave the house, the loop breaks:
+
+- You can still send a prompt, but you cannot **see** what the agent is doing.
+  When it opens a browser, an emulator, or a preview server, that window exists
+  on a screen you are not looking at.
+- You cannot take over. The agent stalls on a dialog, clicks the wrong element,
+  or needs one drag of the mouse — and you are four kilometres away.
+- Chat-only mobile clients show you text. They cannot show you the thing the
+  agent is actually building.
+
+So the agent keeps running, but you are no longer in the loop.
+
+## What this does
+
+Remote Agents puts the **whole device** on your phone: the screen, the mouse,
+the keyboard, the terminal, and the agent's own chat — in one PWA.
+
+- The agent keeps running at home, on real hardware, with your real projects.
+- You watch the screen it is driving, including browsers and emulators.
+- You send prompts from anywhere, and you can take the mouse when it matters.
+- Nothing routes through a vendor: your Mac serves the app, an optional nginx
+  relay gives it a hostname.
+
+That is the difference between "my agent is still running" and "I am still
+driving my agent".
+
+<a href="docs/screenshots.md"><img src="docs/assets/screenshot-grid.png" alt="Desktop app and mobile screens" width="720"></a>
+
+More in [docs/screenshots.md](docs/screenshots.md).
 
 > **Public repo.** No tokens, device keys, or server addresses here.
-> The real configuration lives in `data/` and `relay/devices.json`, both of
-> which are `.gitignore`d. See [docs/security.md](docs/security.md) before deploying.
+> Real configuration lives in `data/` and `relay/devices.json`, both
+> `.gitignore`d. Read [docs/security.md](docs/security.md) before deploying.
 
 ## Features
 
 | Feature | Description |
 |---|---|
 | **Screen** | ScreenCaptureKit via `scap`, JPEG ~5 fps over WebSocket, input via `enigo` |
-| **omp chat** | RPC bridge (`omp --mode rpc-ui`), model picker, session resume, ask form |
+| **Agent chat** | RPC bridge (`omp --mode rpc-ui`), model picker, session resume, ask form |
 | **Terminal** | real PTY via `portable-pty` + tmux + xterm.js |
-| **Sessions** | list, resume, rename, and delete omp sessions without leaving the project |
+| **Sessions** | list, resume, rename, and delete sessions without leaving the project |
 | **Projects** | allowlisted library; add by picking a folder, remove from the list |
 | **Files** | tree explorer, code viewer, markdown preview |
 | **System** | CPU, RAM, disk, network, top processes |
@@ -69,6 +99,40 @@ Never expose port `8788` to the internet. Options:
 | Cloudflare named tunnel | `./scripts/setup-named-tunnel.sh remote.yourdomain.com` |
 | Quick tunnel | `./scripts/tunnel.sh`, random URL for testing |
 
+## More agents are the point
+
+`omp` is the first agent, not the only one. The server already splits the two
+things an agent integration needs:
+
+| Concern | Where it lives |
+|---|---|
+| Conversation transport | `src/rpc.rs` — a JSON request/response bridge over a child process |
+| Interactive surface | `src/terminal.rs` — a real PTY that any CLI can occupy |
+| Session discovery | `src/projects.rs` + the agent's own session directory |
+| Approvals and questions | the `ask` form in `public/app.js`, fed by RPC events |
+
+Supporting another CLI agent means writing a small adapter that speaks that
+agent's chat protocol, or falling back to the PTY when it has none. The phone UI
+does not need to know which agent is behind it.
+
+Planned direction:
+
+- multiple agent backends selectable per project, not one global binary;
+- session listing for agents that store history differently;
+- a documented adapter contract so a new agent can be added without touching the
+  PWA.
+
+## Contributing
+
+Contributions are welcome — especially new agent adapters, relay/transport
+improvements, and mobile UX fixes.
+
+- Read [docs/contributing.md](docs/contributing.md) for code rules and the PR flow.
+- Keep credentials out of commits: `data/`, `.env`, and `relay/devices.json` are
+  ignored; use `.env.example` and `relay/devices.example.json` as templates.
+- If you are adding an agent, open an issue first describing the protocol it
+  exposes (RPC, stdio, or PTY-only) so the adapter boundary stays consistent.
+
 ## Security in brief
 
 - Session cookies are HMAC-signed (`HttpOnly`, `Secure`); pairing clients use
@@ -94,6 +158,7 @@ Threat model details: [docs/security.md](docs/security.md).
 | [docs/security.md](docs/security.md) | threat model and limits |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | common symptoms and causes |
 | [docs/contributing.md](docs/contributing.md) | code rules and PR flow |
+| [docs/screenshots.md](docs/screenshots.md) | desktop and mobile screenshots |
 
 ## Layout
 

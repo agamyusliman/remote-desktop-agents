@@ -69,8 +69,12 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 PLIST
 
 # Bundle-scoped defaults read by the binary itself (see config::apply_bundle_defaults).
-RELAY_URL="${REMOTE_AGENT_RELAY:-https://relay.example.com}"
-printf '%s\n' "$RELAY_URL" > "$APP/Contents/Resources/relay-url"
+# Only write a bundle default when one is actually requested. A placeholder here
+# would override the user's real public URL on every rebuild.
+RELAY_URL="${REMOTE_AGENT_RELAY:-}"
+if [[ -n "$RELAY_URL" ]]; then
+  printf '%s\n' "$RELAY_URL" > "$APP/Contents/Resources/relay-url"
+fi
 
 # A stable signature is what lets macOS keep the Screen Recording /
 # Accessibility grant across rebuilds. An ad-hoc signature changes its cdhash
