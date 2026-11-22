@@ -75,6 +75,11 @@ A few habits to know:
   `/resume`.
 - **Rename/delete session** = pencil / trash icon on each session row.
   Rename writes to the session file, so omp uses the new name too.
+- **Attach to a running terminal** = the same panel lists tmux sessions already
+  open on the Mac under "Running on this Mac". Tapping one joins that session
+  instead of starting a new agent, so the phone drives the same context and any
+  tool it launches — an emulator, a dev server — is visible on the screen
+  stream. Sessions you attach to skip `/resume`; tmux would ignore it anyway.
 
 ## Where data is stored
 
