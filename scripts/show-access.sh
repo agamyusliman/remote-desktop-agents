@@ -6,7 +6,7 @@ ID_FILE="$ROOT/data/id"
 TUNNEL_FILE="$ROOT/data/tunnel-url"
 PORT="${PORT:-8788}"
 
-[[ -f "$ID_FILE" ]] || { echo "Belum ada ID. Jalankan server sekali."; exit 1; }
+[[ -f "$ID_FILE" ]] || { echo "No ID yet. Run the server once."; exit 1; }
 ID="$(cat "$ID_FILE")"
 LAN="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo 127.0.0.1)"
 
@@ -16,4 +16,4 @@ if [[ -f "$TUNNEL_FILE" ]]; then
   echo "WAN       : $(cat "$TUNNEL_FILE")"
 fi
 echo
-echo "Login: buka URL, masukkan ID (atau scan QR di app desktop). Connect langsung."
+echo "Login: open the URL, enter the ID (or scan the QR in the desktop app). Connect directly."

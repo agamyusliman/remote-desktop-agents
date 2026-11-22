@@ -1,55 +1,55 @@
-# Konfigurasi
+# Configuration
 
-Tiga sumber pengaturan, berurutan menang:
+Three sources of settings, in order of precedence:
 
-1. `settings.json` di direktori data (ditulis UI Setup)
-2. environment variable
-3. default bawaan
+1. `settings.json` in the data directory (written by the Setup UI)
+2. environment variables
+3. built-in defaults
 
-Direktori data:
+Data directory:
 
-- app terpasang: `~/Library/Application Support/Remote Agents/`
-- mode developer: `./data/` (override dengan `REMOTE_DATA`)
+- installed app: `~/Library/Application Support/Remote Agents/`
+- developer mode: `./data/` (override with `REMOTE_DATA`)
 
-## Environment variable
+## Environment variables
 
-| Variabel | Default | Arti |
+| Variable | Default | Meaning |
 |---|---|---|
-| `HOST` | `0.0.0.0` | alamat bind |
+| `HOST` | `0.0.0.0` | bind address |
 | `PORT` | `8788` | port |
-| `OMP_CWD` | `~/Documents/Ai` | folder awal omp |
-| `ALLOWED_ROOTS` | `OMP_CWD` | root yang boleh diakses, dipisah `:` |
-| `OMP_BIN` | `/opt/homebrew/bin/omp` | binary omp |
-| `TMUX_BIN` | `/opt/homebrew/bin/tmux` | binary tmux |
-| `CAPTURE_FPS` | `5` | batas frame per detik |
+| `OMP_CWD` | `~/Documents/Ai` | omp's starting folder |
+| `ALLOWED_ROOTS` | `OMP_CWD` | roots that may be accessed, separated by `:` |
+| `OMP_BIN` | `/opt/homebrew/bin/omp` | omp binary |
+| `TMUX_BIN` | `/opt/homebrew/bin/tmux` | tmux binary |
+| `CAPTURE_FPS` | `5` | frame cap per second |
 | `JPEG_QUALITY` | `62` | 20–95 |
 | `CAPTURE_RESOLUTION` | `720p` | `720p` / `1080p` |
-| `REMOTE_TOKEN` | acak → `data/token` | secret panjang |
-| `PUBLIC_URL` | kosong | URL yang ditampilkan di Settings |
-| `REMOTE_DATA` | `./data` | direktori data |
-| `SESSION_TTL_DAYS` | `365` | umur cookie login (1–3650) |
-| `REMOT_AGENT_DESKTOP` | `0` | `1` = mode tray + onboarding QR |
-| `REMOT_AGENT_TUNNEL` | `0` | autostart tunnel saat login |
+| `REMOTE_TOKEN` | random → `data/token` | long secret |
+| `PUBLIC_URL` | empty | URL shown in Settings |
+| `REMOTE_DATA` | `./data` | data directory |
+| `SESSION_TTL_DAYS` | `365` | login cookie lifetime (1–3650) |
+| `REMOT_AGENT_DESKTOP` | `0` | `1` = tray mode + QR onboarding |
+| `REMOT_AGENT_TUNNEL` | `0` | autostart tunnel at login |
 
-## Berkas di direktori data
+## Files in the data directory
 
-| Berkas | Isi | Mode |
+| File | Contents | Mode |
 |---|---|---|
-| `id` | ID perangkat 9 digit | 600 |
-| `token` | token panjang | 600 |
-| `secret` | kunci HMAC cookie | 600 |
-| `clients.json` | allowlist klien hasil pairing | 600 |
-| `projects.json` | library project | 644 |
-| `settings.json` | pengaturan dari UI | 644 |
-| `relay-devices.txt` | mapping relay: `<key> <host:port>` per baris | 644 |
-| `tunnel-url` | URL publik hasil tunnel (opsional) | 644 |
+| `id` | 9-digit device ID | 600 |
+| `token` | long token | 600 |
+| `secret` | cookie HMAC key | 600 |
+| `clients.json` | paired-client allowlist | 600 |
+| `projects.json` | project library | 644 |
+| `settings.json` | settings from the UI | 644 |
+| `relay-devices.txt` | relay mapping: `<key> <host:port>` per line | 644 |
+| `tunnel-url` | public tunnel URL (optional) | 644 |
 
-Hapus `secret` untuk membatalkan semua cookie. Hapus `clients.json` untuk
-membatalkan semua pairing.
+Delete `secret` to invalidate all cookies. Delete `clients.json` to invalidate
+all pairings.
 
-## Nilai settings dari UI
+## Settings values from the UI
 
-`/api/setup` mengembalikan daftar ini; `POST /api/setup` menyimpannya.
+`/api/setup` returns this list; `POST /api/setup` saves it.
 
 ```
 deviceName  host  port  publicUrl  captureFps  jpegQuality
@@ -57,23 +57,24 @@ resolution  ompCwd  ompBin  allowedRoots  sessionTtlDays
 requirePairing  relayUrl  relayKey
 ```
 
-`relayKey` adalah kunci perangkat di relay (`a`, `b`, …). Dipakai klien untuk
-menulis cookie `ra_device` setelah pairing.
+`relayKey` is the device key on the relay (`a`, `b`, …). Clients use it to
+write the `ra_device` cookie after pairing.
 
-## Preferensi klien (localStorage)
+## Client preferences (localStorage)
 
-Disimpan di HP, bukan di server:
+Stored on the phone, not on the server:
 
-| Kunci | Isi |
+| Key | Contents |
 |---|---|
 | `ra.view` | layout: `term`, `screen`, `files`, `split` |
 | `ra.sidebar` | `expanded` / `collapsed` |
-| `ra.prefs` | ukuran font, opsi terminal |
-| `ra.project` | project terakhir dibuka |
-| `ra.keys` | kunci klien per perangkat, agar tap kartu = masuk tanpa pairing ulang |
+| `ra.prefs` | font size, terminal options |
+| `ra.project` | last opened project |
+| `ra.keys` | client keys per device, so tapping a card logs in without pairing again |
 
-Karena disimpan lokal, HP baru atau clear-site-data mengembalikan ke default.
+Because they're stored locally, a new phone or clearing site data returns to
+defaults.
 
-`ra.keys` sengaja **tidak** dihapus saat logout: logout mengakhiri sesi,
-sedangkan kunci perangkat tetap tersimpan di HP itu. Untuk benar-benar memutus
-akses, hapus perangkat di daftar app desktop — server mencabut kuncinya.
+`ra.keys` is deliberately **not** deleted on logout: logout ends the session,
+while the device key stays stored on that phone. To truly revoke access, remove
+the device in the desktop app's device list — the server revokes its key.

@@ -9,13 +9,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PORT="${PORT:-8788}"
 
 if [[ ! -f "$HOME/.cloudflared/cert.pem" ]]; then
-  echo "Belum login. Jalankan dulu: cloudflared tunnel login"
+  echo "Not logged in yet. Run this first: cloudflared tunnel login"
   exit 1
 fi
 
 cloudflared tunnel create "$NAME" 2>/dev/null || true
 TUNNEL_ID="$(cloudflared tunnel list --output json | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((t['id'] for t in d if t['name']=='$NAME'),''))")"
-[[ -n "$TUNNEL_ID" ]] || { echo "tunnel $NAME tidak ditemukan"; exit 1; }
+[[ -n "$TUNNEL_ID" ]] || { echo "tunnel $NAME not found"; exit 1; }
 
 cloudflared tunnel route dns "$NAME" "$HOSTNAME"
 
@@ -30,7 +30,7 @@ ingress:
 YAML
 
 echo "Tunnel $NAME -> $HOSTNAME"
-echo "Jalankan: cloudflared tunnel run $NAME"
-echo "Atau:     ./scripts/tunnel.sh --named $NAME"
+echo "Run:      cloudflared tunnel run $NAME"
+echo "Or:       ./scripts/tunnel.sh --named $NAME"
 echo
-echo "Set PUBLIC_URL=https://$HOSTNAME di .env agar tampil di Settings."
+echo "Set PUBLIC_URL=https://$HOSTNAME in .env so it shows in Settings."

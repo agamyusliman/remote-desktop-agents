@@ -69,7 +69,7 @@ async function load({ quiet = false } = {}) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     data = await res.json();
   } catch (err) {
-    if (!quiet) $("headSub").textContent = `Tidak bisa memuat status: ${err.message}`;
+    if (!quiet) $("headSub").textContent = `Cannot load status: ${err.message}`;
     $("livePill").textContent = "offline";
     $("livePill").className = "pill warn";
     return;
@@ -86,7 +86,7 @@ function render(data) {
   if ($("connRelay")) $("connRelay").textContent = env.publicUrl || env.lanUrl || "—";
   if ($("connPill")) {
     const ready = permissions.screen.ok || permissions.input.ok;
-    $("connPill").textContent = ready ? "siap" : "perlu izin";
+    $("connPill").textContent = ready ? "ready" : "needs permission";
     $("connPill").className = `pill ${ready ? "ok" : "warn"}`;
   }
   const screenOk = permissions.screen.ok;
@@ -97,7 +97,7 @@ function render(data) {
     $("livePill").textContent = `${connected} mobile`;
     $("livePill").className = "pill ok";
   } else {
-    $("livePill").textContent = screenOk ? "online" : "perlu izin";
+    $("livePill").textContent = screenOk ? "online" : "needs permission";
     $("livePill").className = `pill ${screenOk ? "ok" : "warn"}`;
   }
 
@@ -108,7 +108,7 @@ function render(data) {
     const pretty = `${code.slice(0, 3)}-${code.slice(3)}`;
     $("pairCode").textContent = pretty;
     $("pairHint").textContent =
-      expires > 0 ? `Berlaku ${Math.floor(expires / 60)}m ${expires % 60}s · sekali pakai` : "Kedaluwarsa";
+      expires > 0 ? `Valid for ${Math.floor(expires / 60)}m ${expires % 60}s · single use` : "Expired";
     const img = $("qrBox").querySelector("img");
     const src = `/desktop/setup-qr.svg?c=${encodeURIComponent(code)}`;
     if (!img || img.getAttribute("src") !== src) {
@@ -121,15 +121,15 @@ function render(data) {
     }
   } else {
     $("pairCode").textContent = "— — — —";
-    $("pairHint").textContent = "Tekan tombol untuk membuat kode";
+    $("pairHint").textContent = "Press the button to create a code";
     $("qrBox").classList.add("is-empty");
-    $("qrBox").innerHTML = '<img class="qr-ghost" src="/icons/logo-192.png" alt="" width="72" height="72"><span>Belum ada kode</span>';
+    $("qrBox").innerHTML = '<img class="qr-ghost" src="/icons/logo-192.png" alt="" width="72" height="72"><span>No code yet</span>';
   }
   $("pairNew").disabled = runtime.headless === false && false;
 
   // ---- connect info (moved from the old Access tab) ----
   if ($("connLan")) $("connLan").textContent = env.lanUrl || "—";
-  if ($("connOmp")) $("connOmp").textContent = env.ompVersion || "tidak terdeteksi";
+  if ($("connOmp")) $("connOmp").textContent = env.ompVersion || "not detected";
   if ($("connCwd")) $("connCwd").textContent = data.settings.ompCwd || "—";
 
   // ---- permissions ----
@@ -137,21 +137,21 @@ function render(data) {
   perms.textContent = "";
   const screenBtn = document.createElement("button");
   screenBtn.className = "link";
-  screenBtn.textContent = "Buka pengaturan";
+  screenBtn.textContent = "Open settings";
   screenBtn.addEventListener("click", () => openPane("screen"));
-  perms.append(row("Screen Recording", screenOk ? "aktif" : permissions.screen.error || "belum diizinkan",
+  perms.append(row("Screen Recording", screenOk ? "on" : permissions.screen.error || "not allowed",
     screenOk ? pill("ok", "ok") : screenBtn));
   const inputBtn = document.createElement("button");
   inputBtn.className = "link";
-  inputBtn.textContent = "Buka pengaturan";
+  inputBtn.textContent = "Open settings";
   inputBtn.addEventListener("click", () => openPane("input"));
-  const inputRow = row("Accessibility (mouse/keyboard)", inputOk ? "aktif" : "belum diizinkan",
+  const inputRow = row("Accessibility (mouse/keyboard)", inputOk ? "on" : "not allowed",
     inputOk ? pill("ok", "ok") : inputBtn);
   if (!inputOk && permissions.input.live) {
     // Granted in System Settings but the running process still reports false.
     const retry = document.createElement("button");
     retry.className = "link";
-    retry.textContent = "Muat ulang izin";
+    retry.textContent = "Reload permissions";
     retry.addEventListener("click", async () => {
       retry.disabled = true;
       const res = await api("/api/setup");
@@ -171,7 +171,7 @@ function render(data) {
   for (const item of pending) {
     const ok = document.createElement("button");
     ok.className = "link";
-    ok.innerHTML = '<svg class="bi"><use href="#i-check"/></svg> setujui';
+    ok.innerHTML = '<svg class="bi"><use href="#i-check"/></svg> approve';
     ok.addEventListener("click", async () => {
       ok.disabled = true;
       await api("/api/pair/approve", {
@@ -181,7 +181,7 @@ function render(data) {
       });
       await load({ quiet: true });
     });
-    clients.append(row(`Menunggu persetujuan: ${item.name || "perangkat"}`, item.purpose || "login", ok));
+    clients.append(row(`Awaiting approval: ${item.name || "device"}`, item.purpose || "login", ok));
   }
   // A device connected with an older session cookie has no pairing entry.
   // Surface it so "nothing connected" is never shown while a viewer is active.
@@ -192,15 +192,15 @@ function render(data) {
     sess.className = "row";
     const grow = document.createElement("div");
     grow.className = "grow";
-    grow.innerHTML = '<b>Sesi lama</b><small>Terhubung tanpa data pairing</small>';
-    sess.append(grow, pill("terhubung", "ok"));
+    grow.innerHTML = '<b>Old session</b><small>Connected without pairing data</small>';
+    sess.append(grow, pill("connected", "ok"));
     clients.append(sess);
   }
 
   if (!pairing.clients.length && !sessionActive) {
     const empty = document.createElement("div");
     empty.className = "empty";
-    empty.textContent = "Belum ada perangkat. Scan QR di tab Hubungkan.";
+    empty.textContent = "No devices yet. Scan the QR in the Connect tab.";
     clients.append(empty);
   }
   for (const client of pairing.clients) {
@@ -211,22 +211,22 @@ function render(data) {
     if (online) {
       const cut = document.createElement("button");
       cut.className = "link danger";
-      cut.textContent = "putuskan";
+      cut.textContent = "disconnect";
       cut.addEventListener("click", () => revoke(client.id, client.name));
       actions.append(cut);
     }
 
     const del = document.createElement("button");
     del.className = "link danger";
-    del.textContent = "hapus";
+    del.textContent = "remove";
     del.addEventListener("click", () => revoke(client.id, client.name));
     actions.append(del);
 
     const seen = client.last_seen
-      ? new Date(client.last_seen * 1000).toLocaleString("id-ID")
-      : "baru";
-    const label = `${client.platform || "web"} · ${online ? "sekarang" : seen}`;
-    const statusPill = pill(online ? "terhubung" : "offline", online ? "ok" : "");
+      ? new Date(client.last_seen * 1000).toLocaleString("en-US")
+      : "new";
+    const label = `${client.platform || "web"} · ${online ? "now" : seen}`;
+    const statusPill = pill(online ? "connected" : "offline", online ? "ok" : "");
 
     const rowEl = row(client.name || client.id, label, actions);
     rowEl.insertBefore(statusPill, actions);
@@ -235,7 +235,7 @@ function render(data) {
   if (pairing.clients.length) {
     const all = document.createElement("button");
     all.className = "link danger";
-    all.textContent = `hapus semua (${pairing.clients.length})`;
+    all.textContent = `remove all (${pairing.clients.length})`;
     all.style.marginTop = "8px";
     all.addEventListener("click", () => revokeAll());
     clients.append(all);
@@ -243,7 +243,7 @@ function render(data) {
 
   loadAutostart();
   fillForm(data.settings);
-  $("footInfo").textContent = `data ${device.dataDir} · sesi ${env.sessionTtlDays} hari`;
+  $("footInfo").textContent = `data ${device.dataDir} · session ${env.sessionTtlDays} days`;
   $("footVer").textContent = `v${runtime.version} · ${runtime.headless ? "headless" : "desktop"}`;
 }
 
@@ -293,7 +293,7 @@ function readForm() {
 
 async function save({ restart = false } = {}) {
   const payload = readForm();
-  setMsg("menyimpan…");
+  setMsg("saving…");
   try {
     const res = await api("/api/setup", {
       method: "POST",
@@ -302,24 +302,24 @@ async function save({ restart = false } = {}) {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      setMsg(data.error || `gagal menyimpan (${res.status})`);
+      setMsg(data.error || `failed to save (${res.status})`);
       return false;
     }
     // One button: save, then restart only when the server says a change needs
     // it. Two save buttons with different behaviour was the confusing part.
     const needsRestart = Array.isArray(data.needsRestart) && data.needsRestart.length > 0;
-    setMsg(needsRestart ? "tersimpan · menerapkan…" : "tersimpan", true);
+    setMsg(needsRestart ? "saved · applying…" : "saved", true);
     $("restartHint")?.classList.toggle("hidden", !needsRestart);
     if (needsRestart) await doRestart();
     return true;
   } catch (err) {
-    setMsg(`gagal: ${err.message}`);
+    setMsg(`failed: ${err.message}`);
     return false;
   }
 }
 
 async function doRestart() {
-  setMsg("restart…");
+  setMsg("restarting…");
   try {
     await api("/api/setup/restart", { method: "POST" });
   } catch {}
@@ -329,13 +329,13 @@ async function doRestart() {
     try {
       const res = await api("/api/setup");
       if (res.ok) {
-        setMsg("restart selesai", true);
+        setMsg("restart complete", true);
         await load();
         return;
       }
     } catch {}
   }
-  setMsg("server belum kembali — cek log", false);
+  setMsg("server did not come back — check the log", false);
 }
 
 async function pairNew() {
@@ -344,13 +344,13 @@ async function pairNew() {
     const res = await api("/api/pair/new", { method: "POST" });
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      $("pairHint").textContent = "gagal membuat kode";
+      $("pairHint").textContent = "failed to create code";
       return;
     }
     startPairCountdown(data.expiresIn || 300);
     await load({ quiet: true });
   } catch {
-    $("pairHint").textContent = "gagal membuat kode";
+    $("pairHint").textContent = "failed to create code";
   } finally {
     $("pairNew").disabled = false;
   }
@@ -363,11 +363,11 @@ function startPairCountdown(seconds) {
     left -= 1;
     if (left <= 0) {
       clearInterval(pairTimer);
-      $("pairHint").textContent = "Kedaluwarsa — buat kode baru";
-      $("qrBox").innerHTML = '<div class="qr-empty">Kode kedaluwarsa</div>';
+      $("pairHint").textContent = "Expired — create a new code";
+      $("qrBox").innerHTML = '<div class="qr-empty">Code expired</div>';
       return;
     }
-    $("pairHint").textContent = `Berlaku ${Math.floor(left / 60)}m ${left % 60}s · sekali pakai`;
+    $("pairHint").textContent = `Valid for ${Math.floor(left / 60)}m ${left % 60}s · single use`;
   }, 1000);
 }
 
@@ -384,10 +384,10 @@ function askConfirm(message) {
     row.className = "ask-actions-ui";
     const no = document.createElement("button");
     no.className = "btn ghost";
-    no.textContent = "Batal";
+    no.textContent = "Cancel";
     const yes = document.createElement("button");
     yes.className = "btn primary";
-    yes.textContent = "Ya, lanjutkan";
+    yes.textContent = "Yes, continue";
     row.append(no, yes);
     card.append(text, row);
     back.append(card);
@@ -400,7 +400,7 @@ function askConfirm(message) {
 }
 
 async function revoke(id, name) {
-  const ok = await askConfirm(`Putuskan “${name || id}”? Perangkat itu harus pairing ulang untuk masuk lagi.`);
+  const ok = await askConfirm(`Disconnect “${name || id}”? That device must pair again to sign in.`);
   if (!ok) return;
   try {
     const res = await api("/api/pair/revoke", {
@@ -410,19 +410,19 @@ async function revoke(id, name) {
     });
     const out = await res.json().catch(() => ({}));
     if (!res.ok || !out.ok) {
-      setMsg(`gagal memutuskan: ${out.error || res.status}`);
+      setMsg(`failed to disconnect: ${out.error || res.status}`);
       return;
     }
-    setMsg(`${name || id} diputuskan`, true);
+    setMsg(`${name || id} disconnected`, true);
   } catch (err) {
-    setMsg(`gagal: ${err.message}`);
+    setMsg(`failed: ${err.message}`);
     return;
   }
   await load({ quiet: true });
 }
 
 async function revokeAll() {
-  const ok = await askConfirm("Hapus semua perangkat tepercaya? Semua harus pairing ulang.");
+  const ok = await askConfirm("Remove all trusted devices? Every device must pair again.");
   if (!ok) return;
   try {
     const res = await api("/api/pair/revoke", {
@@ -432,12 +432,12 @@ async function revokeAll() {
     });
     const out = await res.json().catch(() => ({}));
     if (!res.ok || !out.ok) {
-      setMsg(`gagal menghapus: ${out.error || res.status}`);
+      setMsg(`failed to remove: ${out.error || res.status}`);
       return;
     }
-    setMsg("Semua perangkat dihapus", true);
+    setMsg("All devices removed", true);
   } catch (err) {
-    setMsg(`gagal: ${err.message}`);
+    setMsg(`failed: ${err.message}`);
     return;
   }
   await load({ quiet: true });
@@ -459,7 +459,7 @@ async function loadAutostart() {
     const box = $("prefAutostart");
     box.checked = !!data.enabled;
     box.disabled = !data.supported;
-    box.closest(".checkrow").title = data.supported ? "" : "Hanya untuk app macOS";
+    box.closest(".checkrow").title = data.supported ? "" : "macOS app only";
   } catch {}
 }
 
@@ -472,10 +472,10 @@ $("prefAutostart").addEventListener("change", async (event) => {
   });
   if (!res.ok) {
     event.target.checked = !enabled;
-    setMsg("Gagal mengubah autostart");
+    setMsg("Failed to change autostart");
     return;
   }
-  setMsg(enabled ? "Autostart aktif" : "Autostart dimatikan", true);
+  setMsg(enabled ? "Autostart enabled" : "Autostart disabled", true);
 });
 
 $("copyId")?.addEventListener("click", async () => {
@@ -483,7 +483,7 @@ $("copyId")?.addEventListener("click", async () => {
   if (!id || id === "—") return;
   try {
     await navigator.clipboard.writeText(id);
-    setMsg("ID disalin", true);
+    setMsg("ID copied", true);
   } catch {}
 });
 
@@ -511,7 +511,7 @@ if (!window.__RA_DESKTOP__ && !location.search.includes("debug=1")) {
   const banner = document.createElement("div");
   banner.className = "banner-warn";
   banner.textContent =
-    "Halaman ini untuk app desktop. Buka lewat menu bar Remote Agents, atau tambahkan ?debug=1.";
+    "This page is for the desktop app. Open it from the Remote Agents menu bar item, or add ?debug=1.";
   document.body.append(banner);
 }
 
@@ -525,7 +525,7 @@ const picker = {
 function pickerOpen(fieldName) {
   picker.field = fieldName;
   $("pickerTitle").textContent =
-    fieldName === "allowedRoots" ? "Pilih folder yang boleh diakses" : "Pilih folder project";
+    fieldName === "allowedRoots" ? "Choose allowed folder" : "Choose project folder";
   $("picker").classList.remove("hidden");
   const current = $("cfgForm")?.elements[fieldName]?.value?.split(",")[0]?.trim();
   pickerGo(current || "");
@@ -538,11 +538,11 @@ function pickerClose() {
 
 async function pickerGo(path) {
   const list = $("pickerList");
-  list.innerHTML = '<div class="picker-empty">memuat…</div>';
+  list.innerHTML = '<div class="picker-empty">loading…</div>';
   try {
     const res = await api(`/api/fs?browse=1&path=${encodeURIComponent(path)}`);
     if (!res.ok) {
-      list.innerHTML = `<div class="picker-empty">Tidak bisa dibuka (${res.status})</div>`;
+      list.innerHTML = `<div class="picker-empty">Cannot open (${res.status})</div>`;
       return;
     }
     const data = await res.json();
@@ -555,12 +555,12 @@ async function pickerGo(path) {
 
     const dirs = (data.entries || []).filter((e) => e.is_dir);
     if (!dirs.length) {
-      list.innerHTML = '<div class="picker-empty">Tidak ada subfolder.</div>';
+      list.innerHTML = '<div class="picker-empty">No subfolders.</div>';
       return;
     }
 
     // Two distinct affordances per row: the name opens the folder, the
-    // "Pilih" button picks it. Tapping the row no longer silently selects.
+    // "Choose" button picks it. Tapping the row no longer silently selects.
     for (const entry of dirs) {
       const row = document.createElement("div");
       row.className = "picker-item";
@@ -577,8 +577,8 @@ async function pickerGo(path) {
       const pick = document.createElement("button");
       pick.type = "button";
       pick.className = "pi-pick";
-      pick.textContent = "Pilih";
-      pick.title = `Pilih ${entry.name}`;
+      pick.textContent = "Choose";
+      pick.title = `Choose ${entry.name}`;
       pick.addEventListener("click", () => pickerTake(entry.path));
 
       row.append(openBtn, pick);
@@ -626,7 +626,7 @@ function pickerTake(path) {
   const input = $("cfgForm")?.elements[picker.field];
   if (input) input.value = path;
   pickerClose();
-  setMsg("Folder dipilih — tekan Simpan", true);
+  setMsg("Folder selected — press Save", true);
 }
 
 function pickerChoose() {

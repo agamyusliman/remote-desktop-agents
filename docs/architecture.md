@@ -1,110 +1,110 @@
-# Arsitektur
+# Architecture
 
 ```
-HP (PWA)  ──HTTPS/WSS──>  relay nginx  ──tunnel──>  remot-agent (Rust)  ──>  macOS
-                                                     ├─ scap      (layar)
-                                                     ├─ enigo     (input)
-                                                     ├─ portable-pty + tmux
-                                                     └─ omp --mode rpc-ui
+Phone (PWA)  ──HTTPS/WSS──>  nginx relay  ──tunnel──>  remot-agent (Rust)  ──>  macOS
+                                                       ├─ scap      (screen)
+                                                       ├─ enigo     (input)
+                                                       ├─ portable-pty + tmux
+                                                       └─ omp --mode rpc-ui
 ```
 
-## Struktur `src/`
+## `src/` layout
 
-| Berkas | Tanggung jawab |
+| File | Responsibility |
 |---|---|
-| `main.rs` | route HTTP/WS, auth, API file & project, PWA shell |
-| `auth.rs` | cookie HMAC, allowlist sesi, rate limit login |
-| `pairing.rs` | kode pairing, client key, revoke |
-| `rpc.rs` | jembatan omp RPC (chat, model, sesi, form ask) |
-| `capture.rs` | loop ScreenCaptureKit; idle-aware + deteksi frame identik |
-| `input.rs` | worker enigo untuk mouse/keyboard |
-| `terminal.rs` | PTY + tmux, satu sesi tmux per target |
-| `projects.rs` | library project dengan allowlist |
-| `sysmon.rs` | sampler CPU/RAM/disk/jaringan |
+| `main.rs` | HTTP/WS routes, auth, file & project API, PWA shell |
+| `auth.rs` | HMAC cookies, session allowlist, login rate limit |
+| `pairing.rs` | pairing codes, client keys, revoke |
+| `rpc.rs` | omp RPC bridge (chat, model, sessions, ask forms) |
+| `capture.rs` | ScreenCaptureKit loop; idle-aware + identical-frame detection |
+| `input.rs` | enigo worker for mouse/keyboard |
+| `terminal.rs` | PTY + tmux, one tmux session per target |
+| `projects.rs` | project library with allowlist |
+| `sysmon.rs` | CPU/RAM/disk/network sampler |
 | `config.rs` | env + `settings.json` |
-| `identity.rs` | ID perangkat, secret |
+| `identity.rs` | device ID, secret |
 
-## Struktur `public/`
+## `public/` layout
 
-Shell PWA, tanpa build step.
+PWA shell, no build step.
 
-| Berkas | Isi |
+| File | Contents |
 |---|---|
-| `index.html` | shell app, semua pane |
-| `app.js` | logika klien (nav, terminal, layar, file, pairing) |
-| `style.css` | seluruh styling |
-| `sw.js` | service worker: cache shell saja |
-| `pair.js`, `setup.css` | halaman pairing/onboarding |
+| `index.html` | app shell, all panes |
+| `app.js` | client logic (nav, terminal, screen, files, pairing) |
+| `style.css` | all styling |
+| `sw.js` | service worker: shell cache only |
+| `pair.js`, `setup.css` | pairing/onboarding pages |
 | `vendor/` | xterm, marked, DOMPurify, jsQR |
 
-## Alur layar
+## Screen flow
 
-1. Klien membuka `/ws/screen`.
-2. `capture.rs` mengambil frame, meng-encode JPEG, mengirim biner.
-3. Klien menggambar ke `<canvas>`. Input (mouse/keyboard) dikirim sebagai pesan
-   JSON pada WebSocket `/ws/screen` yang sama, lalu dieksekusi `input.rs`.
-4. Capture berhenti saat tidak ada penonton, dan melewati frame yang identik.
+1. The client opens `/ws/screen`.
+2. `capture.rs` grabs a frame, encodes JPEG, sends binary.
+3. The client draws to `<canvas>`. Input (mouse/keyboard) is sent as JSON
+   messages on the same `/ws/screen` WebSocket, then executed by `input.rs`.
+4. Capture stops when there are no viewers, and skips identical frames.
 
-Frame dikirim sebagai WebSocket biner — bukan base64 di JSON — supaya tidak ada
-biaya encode/decode tambahan di HP.
+Frames are sent as binary WebSocket — not base64 in JSON — to avoid extra
+encode/decode cost on the phone.
 
-## Alur terminal
+## Terminal flow
 
-1. Klien membuka `/ws/term?cols=&rows=&project=&resume=`.
-2. Server menjalankan `tmux new-session -A -s <nama>` di PTY.
-3. Nama sesi:
+1. The client opens `/ws/term?cols=&rows=&project=&resume=`.
+2. The server runs `tmux new-session -A -s <name>` in a PTY.
+3. Session name:
 
    ```
-   tanpa resume : omp-ai
-   dengan resume: omp-ai-r1a2b3c4d   ← hash file sesi
+   without resume: omp-ai
+   with resume   : omp-ai-r1a2b3c4d   ← session file hash
    ```
 
-   Resume perlu sesi sendiri. Kalau memakai nama yang sama, `-A` akan
-   *attach* ke omp yang sudah jalan dan argumen `--resume` diabaikan.
+   Resume needs its own session. If the same name is used, `-A` will *attach*
+   to the already-running omp and the `--resume` argument is ignored.
 
-4. Saat koneksi putus, hanya proses klien tmux itu yang dimatikan.
+4. When the connection drops, only that tmux client process is killed.
 
-> Jangan memakai `tmux detach-client -s <sesi>` untuk menutup koneksi:
-> perintah itu melepas **semua** klien pada sesi tersebut, sehingga satu HP
-> lama yang tertutup ikut memutus HP yang sedang dipakai.
+> Don't use `tmux detach-client -s <session>` to close a connection: that
+> command detaches **every** client on that session, so one stale phone closing
+> would also disconnect the phone in use.
 
-## Alur chat (omp RPC)
+## Chat flow (omp RPC)
 
-`rpc.rs` menjalankan `omp --mode rpc-ui` sebagai proses anak dan bertukar JSON:
-
-```
-klien ──ws/rpc──> rpc.rs ──stdin/stdout──> omp
-```
-
-Pesan yang didukung antara lain `get_state`, `get_messages_page`, `send_prompt`,
-pemilihan model, serta form `ask`/approval.
-
-## Alur pairing
-
-Lihat [pairing.md](pairing.md). Ringkas:
+`rpc.rs` runs `omp --mode rpc-ui` as a child process and exchanges JSON:
 
 ```
-desktop: /api/pair/new  → kode + QR
-HP     : /pair?k=a      → nginx Set-Cookie ra_device=a
-HP     : /api/pair/claim→ Mac membalas client key
-HP     : cookie ra_c_…  → semua request berikutnya
+client ──ws/rpc──> rpc.rs ──stdin/stdout──> omp
+```
+
+Supported messages include `get_state`, `get_messages_page`, `send_prompt`,
+model selection, and `ask`/approval forms.
+
+## Pairing flow
+
+See [pairing.md](pairing.md). In short:
+
+```
+desktop: /api/pair/new  → code + QR
+phone  : /pair?k=a      → nginx Set-Cookie ra_device=a
+phone  : /api/pair/claim→ Mac replies with client key
+phone  : cookie ra_c_…  → all subsequent requests
 ```
 
 ## Service worker
 
-| Permintaan | Strategi |
+| Request | Strategy |
 |---|---|
-| navigasi (`/`) | network-first, fallback shell |
+| navigation (`/`) | network-first, fallback to shell |
 | `app.js`, `style.css` | network-first |
-| vendor, ikon | stale-while-revalidate |
-| `/api/*`, `/ws/*`, `/sw.js` | tidak disentuh |
+| vendor, icons | stale-while-revalidate |
+| `/api/*`, `/ws/*`, `/sw.js` | untouched |
 
-Versi cache diturunkan dari hash shell saat deploy, sehingga setiap perubahan
-kode membuka cache baru dan menghapus yang lama.
+The cache version is derived from the shell hash at deploy time, so every code
+change opens a new cache and deletes the old one.
 
-## Baterai
+## Battery
 
-- capture berhenti bila `screenClients == 0`
-- frame identik tidak dikirim ulang
-- capture dijeda saat tab Remote tidak aktif
-- terminal tidak di-resize tanpa perubahan ukuran nyata
+- capture stops when `screenClients == 0`
+- identical frames aren't resent
+- capture pauses while the Remote tab is inactive
+- the terminal isn't resized without a real size change

@@ -62,8 +62,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSHumanReadableCopyright</key><string>Remote Agents</string>
-  <key>NSScreenCaptureUsageDescription</key><string>Remote Agents mengirim layar ke perangkatmu sendiri.</string>
-  <key>NSAccessibilityUsageDescription</key><string>Remote Agents memakai mouse/keyboard untuk mengendalikan perangkat ini.</string>
+  <key>NSScreenCaptureUsageDescription</key><string>Remote Agents sends your screen to your own devices.</string>
+  <key>NSAccessibilityUsageDescription</key><string>Remote Agents uses the mouse/keyboard to control this device.</string>
 </dict>
 </plist>
 PLIST

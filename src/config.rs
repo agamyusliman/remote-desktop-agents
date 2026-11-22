@@ -75,50 +75,50 @@ impl Settings {
         let mut errors = Vec::new();
         if let Some(name) = &next.device_name {
             if name.trim().is_empty() || name.chars().count() > 48 {
-                errors.push("Nama perangkat harus 1–48 karakter".into());
+                errors.push("Device name must be 1–48 characters".into());
             }
         }
         if let Some(port) = next.port {
             if port < 1024 {
-                errors.push("Port minimal 1024".into());
+                errors.push("Port must be at least 1024".into());
             }
         }
         if let Some(url) = next.public_url.as_ref().filter(|u| !u.trim().is_empty()) {
             if !(url.starts_with("http://") || url.starts_with("https://")) {
-                errors.push("URL publik harus diawali http:// atau https://".into());
+                errors.push("Public URL must start with http:// or https://".into());
             }
         }
         if let Some(fps) = next.capture_fps {
             if !(1..=30).contains(&fps) {
-                errors.push("FPS harus 1–30".into());
+                errors.push("FPS must be between 1 and 30".into());
             }
         }
         if let Some(q) = next.jpeg_quality {
             if !(20..=95).contains(&q) {
-                errors.push("Kualitas harus 20–95".into());
+                errors.push("Quality must be between 20 and 95".into());
             }
         }
         if let Some(res) = &next.resolution {
             if res != "720p" && res != "1080p" {
-                errors.push("Resolusi harus 720p atau 1080p".into());
+                errors.push("Resolution must be 720p or 1080p".into());
             }
         }
         if let Some(dir) = next.omp_cwd.as_ref().filter(|d| !d.trim().is_empty()) {
             let path = PathBuf::from(dir.trim());
             if !path.is_dir() {
-                errors.push(format!("Folder project tidak ditemukan: {}", path.display()));
+                errors.push(format!("Project folder not found: {}", path.display()));
             }
         }
         if let Some(roots) = &next.allowed_roots {
             for root in roots.iter().filter(|r| !r.trim().is_empty()) {
                 if !PathBuf::from(root.trim()).is_dir() {
-                    errors.push(format!("Folder akses tidak ditemukan: {root}"));
+                    errors.push(format!("Access folder not found: {root}"));
                 }
             }
         }
         if let Some(days) = next.session_ttl_days {
             if !(1..=3650).contains(&days) {
-                errors.push("Durasi login harus 1–3650 hari".into());
+                errors.push("Login duration must be 1–3650 days".into());
             }
         }
         if !errors.is_empty() {

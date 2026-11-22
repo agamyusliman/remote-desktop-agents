@@ -1,29 +1,29 @@
 # Relay
 
-Satu hostname, satu perangkat aktif. Relay memungkinkan beberapa Mac dijangkau
-dari satu alamat tanpa subdomain per mesin.
+One hostname, one active device. The relay lets several Macs be reached from a
+single address without a subdomain per machine.
 
 ```
-HP ──HTTPS──> nginx (VPS) ──tunnel SSH──> Mac A / Mac B / …
+Phone ──HTTPS──> nginx (VPS) ──SSH tunnel──> Mac A / Mac B / …
 ```
 
-## Aturan
+## Rules
 
-- Relay menyimpan satu kunci perangkat aktif di
+- The relay stores one active device key in
   `/var/lib/remote-agents/active`.
-- Perangkat yang tidak aktif menerima **409** dan halaman "Sesi pindah".
-- Pindah perangkat lewat daftar perangkat di app; sesi lama berhenti.
-- Riwayat perangkat (nama, ID, terakhir dipakai) disimpan di browser.
-- Tiap perangkat punya cookie sesi sendiri (`ra_session_<id>`), jadi setelah
-  login sekali tidak perlu login ulang saat dipilih kembali.
+- Inactive devices receive **409** and a "Session moved" page.
+- Switch devices through the device list in the app; the old session stops.
+- Device history (name, ID, last used) is stored in the browser.
+- Each device has its own session cookie (`ra_session_<id>`), so after logging
+  in once you don't need to log in again when it's selected again.
 
-## Alur
+## Flow
 
-1. Buka `https://<relay>`.
-2. Belum ada cookie `ra_device` → relay menyajikan app dengan `?picker=1`.
-3. Tap perangkat → `POST /switch?key=<key>` → `ra_device` diset.
-4. `/auth?id=<id>` → cookie sesi perangkat → masuk ke app.
-5. Perangkat lain yang masih terbuka otomatis menampilkan "Sesi pindah".
+1. Open `https://<relay>`.
+2. No `ra_device` cookie yet → the relay serves the app with `?picker=1`.
+3. Tap a device → `POST /switch?key=<key>` → `ra_device` is set.
+4. `/auth?id=<id>` → device session cookie → enter the app.
+5. Other devices still open automatically show "Session moved".
 
 ## Mapping
 
@@ -40,58 +40,60 @@ Deploy:
 ./scripts/relay-setup-nginx.sh root@<host> <domain>
 ```
 
-Perintah itu men-generate konfigurasi nginx, menyalin app shell, dan mengisi
+That command generates the nginx config, copies the app shell, and fills
 `/var/lib/remote-agents/keys`.
 
-## Endpoint relay
+## Relay endpoints
 
-| Endpoint | Fungsi |
+| Endpoint | Function |
 |---|---|
-| `GET /selector.html` | 302 ke `/?picker=1` (halaman lama, sudah tidak dipakai) |
-| `GET /devices.json` | daftar perangkat (nama + ID) |
-| `GET /active` | kunci perangkat aktif |
-| `GET /switch?key=a` | pindahkan sesi (same-origin saja) |
-| `GET /probe/<key>` | status online perangkat |
-| `GET /pair?k=a` | entry pairing, menyetel `ra_device` |
+| `GET /selector.html` | 302 to `/?picker=1` (legacy page, no longer used) |
+| `GET /devices.json` | device list (name + ID) |
+| `GET /active` | active device key |
+| `GET /switch?key=a` | move the session (same-origin only) |
+| `GET /probe/<key>` | device online status |
+| `GET /pair?k=a` | pairing entry, sets `ra_device` |
 
-## Menambah perangkat
+## Adding a device
 
 ```
 # data/relay-devices.txt
 c 127.0.0.1:8792
 ```
 
-Tambahkan ke `relay/devices.json`, jalankan ulang `relay-setup-nginx.sh`, lalu
-buat tunnel `-R 127.0.0.1:8792:127.0.0.1:<port>`.
+Add it to `relay/devices.json`, rerun `relay-setup-nginx.sh`, then create a
+tunnel `-R 127.0.0.1:8792:127.0.0.1:<port>`.
 
-## Cache dan update PWA
+## PWA caching and updates
 
-Relay menentukan apakah HP menerima versi baru. Aturan yang dipakai:
+The relay decides whether the phone receives a new version. The rules:
 
-| Berkas | Header | Alasan |
+| File | Header | Reason |
 |---|---|---|
-| `/app.js`, `/style.css` | `no-cache, must-revalidate` | PWA tidak punya tombol reload |
-| `/sw.js` | `no-store` | skrip worker adalah mekanisme update itu sendiri |
-| `/` (shell) | `no-cache` | HTML selalu segar |
+| `/app.js`, `/style.css` | `no-cache, must-revalidate` | the PWA has no reload button |
+| `/sw.js` | `no-store` | the worker script is the update mechanism itself |
+| `/` (shell) | `no-cache` | HTML is always fresh |
 
-Versi aset di `index.html` memakai **MD5 isi berkas**, bukan ukuran:
+Asset versions in `index.html` use the **MD5 of file contents**, not size:
 
 ```
 /app.js?v=0a90da595a-84139
-    └ hash 10 char  └ ukuran
+    └ 10-char hash  └ size
 ```
 
-Ukuran saja tidak cukup: dua versi berbeda bisa berukuran sama, dan HP akan
-terus memakai berkas lama.
+Size alone isn't enough: two different versions can have the same size, and the
+phone will keep using the old file.
 
-Versi cache service worker juga diturunkan dari hash shell saat deploy:
+The service worker cache version is also derived from the shell hash at deploy
+time:
 
 ```js
 const VERSION = "ra-26607a5c1c52";   // app.js + style.css + index.html
 ```
 
-## Konfigurasi nginx
+## nginx configuration
 
-Heredoc di `relay-setup-nginx.sh` **di-quote** (`<<'CONF'`). Tanpa quote, shell
-mengekspansi variabel nginx (`$ra_backend`, `$cookie_ra_device`) dan konfigurasi
-rusak. Nilai dinamis masuk lewat placeholder `@HOST@` dan `@DIR@`.
+The heredoc in `relay-setup-nginx.sh` **is quoted** (`<<'CONF'`). Without quotes,
+the shell expands nginx variables (`$ra_backend`, `$cookie_ra_device`) and the
+config breaks. Dynamic values come in through the `@HOST@` and `@DIR@`
+placeholders.

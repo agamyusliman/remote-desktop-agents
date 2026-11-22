@@ -16,7 +16,7 @@ print("ID   :", (d / "id").read_text().strip() if (d / "id").exists() else "—"
 print("Token:", (d / "token").read_text())
 PY
 
-echo "Semua cookie lama tidak valid."
+echo "All old cookies are no longer valid."
 if [[ "${1:-}" == "--restart" ]]; then
   pkill -f 'target/release/remot-agent' 2>/dev/null || true
   sleep 1

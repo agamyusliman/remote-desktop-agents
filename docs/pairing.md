@@ -1,115 +1,117 @@
 # Pairing
 
-Relay hanya jalur awal. Setelah pairing, kunci akses hidup di perangkat.
+The relay is only the entry path. After pairing, the access key lives on the
+device.
 
-## Apa yang disimpan di mana
+## What is stored where
 
-| Relay (VPS) | Perangkat |
+| Relay (VPS) | Device |
 |---|---|
-| routing key (`a`, `b`) | client key 32 byte |
-| nama + ID perangkat | sesi `ra_session_<id>` |
+| routing key (`a`, `b`) | 32-byte client key |
+| device name + ID | session `ra_session_<id>` |
 | cookie `ra_device` | `clients.json` (allowlist, mode 600) |
 | — | `ra_c_<device>_<prefix>` (HttpOnly) |
 
-Relay **tidak pernah** menyimpan client key. Ia hanya meneruskan byte.
+The relay **never** stores the client key. It only forwards bytes.
 
-## Alur
+## Flow
 
-1. App desktop: **Buat kode pairing** → 6 karakter, sekali pakai, 5 menit.
-2. QR berisi:
+1. Desktop app: **Create pairing code** → 6 characters, single use, 5 minutes.
+2. The QR contains:
 
    ```
-   https://relay/pair?k=<relay-key>#c=<kode>&d=<device-id>
+   https://relay/pair?k=<relay-key>#c=<code>&d=<device-id>
    ```
 
-3. HP membuka `/pair?k=a#c=KODE`. Relay **tidak merender halaman**: ia
-   menyetel cookie `ra_device=a` lalu `302` ke `/?k=a`. Browser mempertahankan
-   fragment `#c=` karena `Location` tidak membawanya.
-4. App (satu-satunya UI) membaca `#c=`, memanggil `POST /api/pair/claim`, lalu
-   membersihkan URL dengan `history.replaceState`.
-5. Mac membalas client key; HP menyimpannya sebagai cookie HttpOnly
-   `ra_c_<device-id>_<prefix>` **dan** di `localStorage` (`ra.keys`).
-6. Request berikutnya memakai cookie itu. Relay hanya melihat route.
+3. The phone opens `/pair?k=a#c=CODE`. The relay **does not render a page**: it
+   sets the `ra_device=a` cookie, then `302`s to `/?k=a`. The browser keeps the
+   `#c=` fragment because `Location` doesn't carry it.
+4. The app (the only UI) reads `#c=`, calls `POST /api/pair/claim`, then cleans
+   the URL with `history.replaceState`.
+5. The Mac replies with the client key; the phone stores it as the HttpOnly
+   `ra_c_<device-id>_<prefix>` cookie **and** in `localStorage` (`ra.keys`).
+6. Subsequent requests use that cookie. The relay only sees the route.
 
-## Kenapa kode ada di fragment (`#c=`)
+## Why the code lives in the fragment (`#c=`)
 
-Fragment tidak pernah dikirim ke server. Relay dan access log tidak melihat
-kode pairing. Kode dikirim sekali, langsung ke Mac, di body POST.
+Fragments are never sent to the server. The relay and access logs never see the
+pairing code. The code is sent once, straight to the Mac, in the POST body.
 
-## Cookie `ra_device`
+## The `ra_device` cookie
 
-Ini cookie **milik relay**, bukan milik app. Fungsinya memilih Mac mana yang
-dituju saat satu hostname melayani beberapa Mac.
+This cookie **belongs to the relay**, not the app. Its job is to pick which Mac
+a single hostname routes to when it serves several Macs.
 
-Relay memakai cookie ini untuk merutekan setiap `/api/*`. Tanpa cookie:
+The relay uses this cookie to route every `/api/*`. Without the cookie:
 
 ```
 POST /api/status → 401 {"ok":false,"error":"no_device"}
 ```
 
-Cookie ditulis oleh:
+The cookie is written by:
 
-| Jalur | Ditulis oleh |
+| Path | Written by |
 |---|---|
-| buka `/pair?k=a` (dari QR) | nginx (`Set-Cookie`) |
-| tap kartu perangkat di app | JavaScript (`restoreTrustedCookies`) |
-| pairing sukses di app | JavaScript (`rememberRelayDevice`) |
+| open `/pair?k=a` (from the QR) | nginx (`Set-Cookie`) |
+| tap a device card in the app | JavaScript (`restoreTrustedCookies`) |
+| successful pairing in the app | JavaScript (`rememberRelayDevice`) |
 
-Bila cookie hilang (clear site data, uninstall PWA), app memulihkannya otomatis:
-pada `401 no_device` ia membaca `relayKey` dari `/api/setup`, menulis ulang
-cookie, lalu mengulang request. Untuk instalasi satu perangkat, relay juga
-menyisipkan `window.__RA_DEVICE` ke shell agar HP tanpa cookie tetap bisa pulih.
+If the cookie is lost (clear site data, PWA uninstall), the app restores it
+automatically: on `401 no_device` it reads `relayKey` from `/api/setup`, rewrites
+the cookie, then retries the request. For single-device installs, the relay also
+injects `window.__RA_DEVICE` into the shell so a phone without the cookie can
+still recover.
 
-## Perangkat yang diingat (`ra.keys`)
+## Remembered devices (`ra.keys`)
 
-Selain cookie HttpOnly, HP menyimpan kunci kliennya di `localStorage`. Efeknya:
-setelah **keluar**, tap kartu perangkat langsung masuk lagi tanpa pairing baru.
-Kunci itu hanya dihapus bila kamu memilih *Lupakan perangkat* atau menghapus
-perangkat dari daftar di app desktop.
+Besides the HttpOnly cookie, the phone stores its client keys in `localStorage`.
+Effect: after **logging out**, tapping a device card logs straight back in
+without a new pairing. Those keys are only deleted when you choose *Forget
+device* or remove the device from the list in the desktop app.
 
-## Mode ketat
+## Strict mode
 
-`requirePairing: true` menonaktifkan login ID 9 digit. Yang diterima hanya:
+`requirePairing: true` disables 9-digit ID login. Only these are accepted:
 
-- perangkat hasil pairing, atau
-- token panjang (`data/token`)
+- paired devices, or
+- the long token (`data/token`)
 
 ## Revoke
 
 ```sh
-# satu perangkat
+# one device
 POST /api/pair/revoke   {"id": "c…"}
 
-# semua
+# all
 POST /api/pair/revoke   {"all": true}
 ```
 
-Efek langsung: request dengan cookie lama menerima `401`.
+Immediate effect: requests with old cookies receive `401`.
 
-## Endpoint
+## Endpoints
 
-| Endpoint | Akses |
+| Endpoint | Access |
 |---|---|
 | `POST /api/pair/new` | loopback / paired |
 | `GET /desktop/setup-qr.svg?c=` | loopback / session |
-| `GET /pair` | publik (dengan `?k=`) |
-| `POST /api/pair/claim` | publik (dengan cookie `ra_device`) |
+| `GET /pair` | public (with `?k=`) |
+| `POST /api/pair/claim` | public (with the `ra_device` cookie) |
 | `GET /api/pair/clients` | loopback / paired |
 | `POST /api/pair/revoke` | loopback / paired |
 
-## Yang masih terlihat relay
+## What the relay can still see
 
-- client key **saat** `/api/pair/claim` (TLS berhenti di VPS)
-- metadata: IP, waktu, ukuran trafik, Mac mana yang aktif
+- the client key **during** `/api/pair/claim` (TLS terminates at the VPS)
+- metadata: IP, time, traffic size, which Mac is active
 
-Untuk menghilangkan yang pertama, langkah berikutnya adalah menaruh public key
-Mac di QR dan mengenkripsi claim sehingga relay menjadi pipa buta.
+To eliminate the first, the next step is to put the Mac's public key in the QR
+and encrypt the claim so the relay becomes a blind pipe.
 
-## Masalah umum
+## Common problems
 
-| Gejala | Penyebab |
+| Symptom | Cause |
 |---|---|
-| "Kode salah atau kedaluwarsa" padahal baru dibuat | kode sudah dipakai proses lain, atau > 5 menit |
-| HP masuk tapi berhenti di `connecting` | cookie `ra_device` tidak ada → `/api/*` ditolak |
-| Scan QR berhenti di halaman kosong | link tanpa `?k=` sehingga relay tidak bisa memilih Mac |
-| Kartu perangkat tertulis "perlu pairing" | `ra.keys` tidak punya kunci untuk perangkat itu |
+| "Code is wrong or expired" even though it was just created | the code was already used by another process, or it's > 5 minutes old |
+| phone gets in but stays at `connecting` | `ra_device` cookie missing → `/api/*` rejected |
+| QR scan stops at a blank page | link without `?k=`, so the relay can't select a Mac |
+| device card says "pairing needed" | `ra.keys` has no key for that device |

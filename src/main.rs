@@ -272,10 +272,10 @@ fn print_banner(cfg: &config::Config) {
     println!("  ├─ local:  {base}");
     println!("  ├─ omp:    tmux session '{}' in {}", cfg.session, cfg.cwd.display());
     println!("  ├─ capture: {} @ {} fps, jpeg q{}", cfg.resolution.label(), cfg.fps, cfg.quality);
-    println!("  └─ device: {}  (ID atau scan QR)", cfg.device_id);
+    println!("  └─ device: {}  (ID or scan QR)", cfg.device_id);
     println!();
     println!("  open: {login}");
-    println!("  login: masukkan ID perangkat di halaman login, atau buka URL ber-ID.");
+    println!("  login: enter the device ID on the login page, or open the URL containing it.");
     println!();
     if let Ok(code) = QrCode::new(login.as_bytes()) {
         let qr = code
@@ -1430,7 +1430,7 @@ async fn pair_approve(State(state): State<AppState>, headers: HeaderMap, Json(bo
         return StatusCode::UNAUTHORIZED.into_response();
     }
     if !state.pairing.approve(&body.key) {
-        return (StatusCode::NOT_FOUND, Json(json!({"ok": false, "error": "kode tidak dikenali"}))).into_response();
+        return (StatusCode::NOT_FOUND, Json(json!({"ok": false, "error": "unknown code"}))).into_response();
     }
     info!("approved client key {}", &body.key.chars().take(8).collect::<String>());
     Json(json!({ "ok": true })).into_response()

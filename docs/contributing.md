@@ -1,4 +1,4 @@
-# Kontribusi
+# Contributing
 
 ## Setup
 
@@ -11,66 +11,67 @@ set -a; source .env; set +a
 ./target/release/remot-agent
 ```
 
-`./scripts/setup.sh` membuat `data/` privat berisi token acak dan menyalin
-`.env.example` → `.env`. Jangan commit `data/` atau `.env`.
+`./scripts/setup.sh` creates a private `data/` with a random token and copies
+`.env.example` → `.env`. Don't commit `data/` or `.env`.
 
-## Aturan kode
+## Code rules
 
-- Tidak ada hostname, URL tunnel, token, atau path pribadi yang di-hardcode.
-- Konfigurasi baru wajib berupa env var yang didokumentasikan di `.env.example`
-  dan [configuration.md](configuration.md).
-- Setiap endpoint filesystem harus memeriksa `ALLOWED_ROOTS`.
-- Service worker tidak boleh meng-cache `/api/*`, `/ws/*`, atau frame layar.
-- Jalankan `cargo fmt` dan `cargo clippy` sebelum PR.
+- No hardcoded hostnames, tunnel URLs, tokens, or personal paths.
+- New configuration must be an env var documented in `.env.example` and
+  [configuration.md](configuration.md).
+- Every filesystem endpoint must check `ALLOWED_ROOTS`.
+- The service worker must not cache `/api/*`, `/ws/*`, or screen frames.
+- Run `cargo fmt` and `cargo clippy` before a PR.
 
-## Konvensi klien
+## Client conventions
 
-- `public/` disajikan apa adanya. Tidak ada bundler, tidak ada build step.
-- Satu fungsi, satu tanggung jawab. Hindari abstraksi yang belum perlu.
-- Jangan menambah `setInterval` baru tanpa alasan; baterai adalah batasan nyata.
-- Setiap socket harus punya pemilik tunggal; hindari koneksi ganda.
+- `public/` is served as-is. No bundler, no build step.
+- One function, one responsibility. Avoid abstractions you don't need yet.
+- Don't add new `setInterval` calls without reason; battery is a real constraint.
+- Every socket must have a single owner; avoid duplicate connections.
 
-## Struktur
+## Layout
 
 ```
-src/main.rs       route HTTP/WS, auth, API file & project
-src/rpc.rs        jembatan omp RPC
-src/capture.rs    loop capture (idle-aware)
-src/input.rs      worker enigo
-src/projects.rs   library project
-src/sysmon.rs     sampler sistem
+src/main.rs       HTTP/WS routes, auth, file & project API
+src/rpc.rs        omp RPC bridge
+src/capture.rs    capture loop (idle-aware)
+src/input.rs      enigo worker
+src/projects.rs   project library
+src/sysmon.rs     system sampler
 src/terminal.rs   PTY + tmux
-src/auth.rs       cookie HMAC, rate limit
-src/pairing.rs    kode pairing, client key
+src/auth.rs       HMAC cookies, rate limit
+src/pairing.rs    pairing codes, client keys
 src/config.rs     env + settings
-public/           shell PWA
-scripts/          setup, rotasi token, tunnel, packaging
-docs/             dokumentasi
+public/           PWA shell
+scripts/          setup, token rotation, tunnel, packaging
+docs/             documentation
 ```
 
-## Menguji perubahan
+## Testing changes
 
-Minimal verifikasi manual:
+Minimum manual verification:
 
 ```sh
 cargo build --release
 ./target/release/remot-agent
 ```
 
-Lalu di browser: buka Remote, buka terminal, resume satu sesi, dan pastikan
-terminal bertahan lebih dari 30 detik tanpa kembali ke picker.
+Then in the browser: open Remote, open the terminal, resume a session, and make
+sure the terminal survives more than 30 seconds without falling back to the
+picker.
 
-Untuk perubahan relay:
+For relay changes:
 
 ```sh
 ./scripts/relay-setup-nginx.sh root@<host> <domain>
 curl -s -o /dev/null -w "%{http_code}\n" https://<domain>/api/status
-# 401 JSON {"ok":false,"error":"no_device"} = benar
-# 200 text/html = routing rusak
+# 401 JSON {"ok":false,"error":"no_device"} = correct
+# 200 text/html = broken routing
 ```
 
 ## Commit
 
-- Satu commit, satu alasan.
-- Sebutkan gejala yang diperbaiki, bukan hanya berkas yang diubah.
-- Jangan campur refactor dengan perbaikan bug.
+- One commit, one reason.
+- State the symptom being fixed, not just the files changed.
+- Don't mix refactors with bug fixes.

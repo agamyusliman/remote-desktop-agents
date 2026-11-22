@@ -250,7 +250,7 @@ impl Pairing {
         let key = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(raw);
         let id = format!("c{}", &key[..8]);
         let name = if req.name.trim().is_empty() {
-            "Perangkat".to_string()
+            "Device".to_string()
         } else {
             req.name.trim().chars().take(40).collect()
         };
@@ -286,7 +286,7 @@ impl Pairing {
             approvals.push(PendingApproval {
                 key: key.clone(),
                 name: if req.name.trim().is_empty() {
-                    "Perangkat baru".into()
+                    "New device".into()
                 } else {
                     req.name.trim().chars().take(40).collect()
                 },

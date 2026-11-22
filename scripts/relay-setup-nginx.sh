@@ -14,7 +14,7 @@ if [[ ! -f "$MAPFILE" ]]; then
 # a 127.0.0.1:8788
 # b 127.0.0.1:8790
 TXT
-  echo "Edit $MAPFILE (key + local backend), lalu jalankan lagi."
+  echo "Edit $MAPFILE (key + local backend), then run again."
   exit 0
 fi
 
@@ -278,11 +278,11 @@ PROBES
       if key ~= active then
         ngx.status = 409
         ngx.header["content-type"] = "text/html; charset=utf-8"
-        ngx.say([[<!doctype html><meta charset=utf-8><title>Sesi dipindahkan</title>
+        ngx.say([[<!doctype html><meta charset=utf-8><title>Session moved</title>
 <body style="font:13px system-ui;background:#080a0f;color:#e6e9ef;display:grid;place-items:center;height:100vh;margin:0">
-<div style="text-align:center;max-width:320px"><h1 style="font-size:16px">Sesi aktif di perangkat lain</h1>
-<p style="color:#8b93a3">Satu waktu hanya satu perangkat. Pilih perangkat untuk melanjutkan.</p>
-<a style="color:#7ee2b8" href="/">Buka app</a></div>]])
+<div style="text-align:center;max-width:320px"><h1 style="font-size:16px">Session active on another device</h1>
+<p style="color:#8b93a3">Only one device at a time. Pick a device to continue.</p>
+<a style="color:#7ee2b8" href="/">Open app</a></div>]])
         return ngx.exit(409)
       end
     }

@@ -1,80 +1,81 @@
-# Akses & token
+# Access & tokens
 
-Token memberi kendali penuh atas Mac. Perlakukan seperti password.
+A token grants full control of the Mac. Treat it like a password.
 
-## Melihat akses saat ini
+## Viewing current access
 
-Dari Mac (bukan dari HP):
+From the Mac (not from the phone):
 
 ```sh
 ./scripts/show-access.sh
 ```
 
-Output: ID 9 digit, token, URL LAN, URL WAN.
+Output: 9-digit ID, token, LAN URL, WAN URL.
 
 ## Login
 
-Tiga cara:
+Three ways:
 
-| Cara | Cocok untuk |
+| Way | Suited for |
 |---|---|
-| Scan QR dari app desktop | pemakaian normal |
-| ID 9 digit | tanpa kamera |
-| Token panjang (`data/token`) | darurat / otomatis |
+| Scan QR from the desktop app | normal use |
+| 9-digit ID | no camera |
+| Long token (`data/token`) | emergency / automation |
 
-Buka `/auth?id=<id>` atau `/auth?token=<token>` sekali; cookie HttpOnly
-dipasang dan berlaku `SESSION_TTL_DAYS`.
+Open `/auth?id=<id>` or `/auth?token=<token>` once; the HttpOnly cookie is set
+and valid for `SESSION_TTL_DAYS`.
 
-## Login lewat pairing
+## Logging in through pairing
 
-Kalau `requirePairing: true`, ID tidak berlaku. Yang diterima hanya klien hasil
-pairing atau token panjang. Lihat [pairing.md](pairing.md).
+With `requirePairing: true`, the ID does not work. Only clients that completed
+pairing or the long token are accepted. See [pairing.md](pairing.md).
 
-## Rotasi token (logout semua perangkat)
+## Rotating the token (log out all devices)
 
 ```sh
 ./scripts/rotate-token.sh --restart
 ```
 
-Yang terjadi:
+What happens:
 
-1. `data/token` ditulis ulang
-2. `data/secret` dihapus → semua cookie lama langsung tidak valid
-3. server dijalankan ulang
-4. URL login baru dicetak
+1. `data/token` is rewritten
+2. `data/secret` is deleted → all old cookies become invalid immediately
+3. the server restarts
+4. the new login URL is printed
 
-## Mencabut akses
+## Revoking access
 
-Keamanan dikelola dari **app desktop**, bukan dari HP. Alasannya: HP yang hilang
-tidak bisa dipercaya untuk mencabut dirinya sendiri.
+Security is managed from the **desktop app**, not from the phone. Reason: a lost
+phone can't be trusted to revoke itself.
 
-| Aksi | Di mana | Efek |
+| Action | Where | Effect |
 |---|---|---|
-| Ganti perangkat | Settings HP → **Perangkat** → Ganti | pindah ke Mac lain di relay |
-| Lupakan perangkat | app desktop → daftar perangkat | kunci HP itu dicabut |
-| Putuskan semua | app desktop → daftar perangkat | semua kunci dicabut + token dirotasi |
-| Rotasi manual | `./scripts/rotate-token.sh --restart` | semua cookie & pairing tidak valid |
+| Change device | Phone Settings → **Device** → Change | switch to another Mac on the relay |
+| Forget device | desktop app → device list | that phone's key is revoked |
+| Disconnect all | desktop app → device list | all keys revoked + token rotated |
+| Manual rotation | `./scripts/rotate-token.sh --restart` | all cookies & pairings become invalid |
 
-Menghapus data situs di HP **tidak** mencabut apa pun di server — kuncinya masih
-tersimpan di `clients.json`. Untuk benar-benar memutus, hapus dari app desktop.
+Clearing site data on the phone does **not** revoke anything on the server — the
+key is still stored in `clients.json`. To really disconnect, remove it from the
+desktop app.
 
-Preferensi tampilan (`ra.view`, `ra.sidebar`, `ra.prefs`, `ra.project`) dan kunci
-tersimpan (`ra.keys`) adalah state perangkat, bukan kredensial sesi, jadi tidak
-ikut terhapus saat sesi berakhir.
+Display preferences (`ra.view`, `ra.sidebar`, `ra.prefs`, `ra.project`) and
+stored keys (`ra.keys`) are device state, not session credentials, so they
+survive when a session ends.
 
-## Masa berlaku
+## Expiry
 
-Cookie ditandatangani HMAC dan berlaku `SESSION_TTL_DAYS` (default 365).
-Login ulang memperpanjang masa berlaku. Ubah di
-Settings → Sesi & perangkat.
+Cookies are HMAC-signed and valid for `SESSION_TTL_DAYS` (default 365).
+Logging in again extends the expiry. Change it in
+Settings → Sessions & devices.
 
-## Lupa semuanya
+## Lost everything
 
-Kalau token dan ID hilang dan tidak ada HP yang masih login:
+If the token and ID are lost and no phone is still logged in:
 
 ```sh
 rm ~/Library/Application\ Support/Remote\ Agents/secret
 ./scripts/rotate-token.sh --restart
 ```
 
-App akan membuat secret baru dan mencetak akses baru.
+The app creates a new secret and prints new access details.

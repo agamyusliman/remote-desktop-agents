@@ -1,39 +1,39 @@
-# Dokumentasi Remote Agents
+# Remote Agents documentation
 
-Remote Agents adalah server Rust + PWA untuk mengendalikan satu Mac dari HP:
-lihat layar, gerakkan mouse/keyboard, jalankan omp (chat & terminal), dan
-menjelajahi file project.
+Remote Agents is a Rust + PWA server for controlling a Mac from a phone:
+view the screen, move the mouse/keyboard, run omp (chat & terminal), and
+browse project files.
 
-## Mulai dari mana
+## Where to start
 
-| Kalau kamu… | Baca |
+| If you… | Read |
 |---|---|
-| baru pertama kali pakai | [getting-started.md](getting-started.md) |
-| mau menghubungkan HP ke Mac | [pairing.md](pairing.md) |
-| punya lebih dari satu Mac | [relay.md](relay.md) |
-| ingin kontribusi kode | [contributing.md](contributing.md) |
-| sedang ada masalah | [troubleshooting.md](troubleshooting.md) |
+| are using it for the first time | [getting-started.md](getting-started.md) |
+| want to connect your phone to a Mac | [pairing.md](pairing.md) |
+| have more than one Mac | [relay.md](relay.md) |
+| want to contribute code | [contributing.md](contributing.md) |
+| are running into a problem | [troubleshooting.md](troubleshooting.md) |
 
-## Daftar isi
+## Contents
 
-- **[getting-started.md](getting-started.md)** — install app, izin macOS, langkah pertama di HP.
-- **[pairing.md](pairing.md)** — alur pairing, isi QR, cookie, revoke perangkat.
-- **[relay.md](relay.md)** — satu hostname untuk beberapa Mac, routing, pemilih perangkat.
-- **[access.md](access.md)** — token, rotasi, logout, akses darurat dari Mac.
-- **[configuration.md](configuration.md)** — semua environment variable dan berkas di `data/`.
-- **[architecture.md](architecture.md)** — struktur `src/`, alur data, WebSocket.
-- **[api.md](api.md)** — daftar endpoint HTTP dan WebSocket.
-- **[security.md](security.md)** — model ancaman dan batasan.
-- **[troubleshooting.md](troubleshooting.md)** — gejala umum dan penyebabnya.
-- **[contributing.md](contributing.md)** — aturan kode dan alur PR.
-- **[agent-conventions.md](agent-conventions.md)** — konvensi tooling Bun untuk agen otomatis.
+- **[getting-started.md](getting-started.md)** — install the app, macOS permissions, first steps on the phone.
+- **[pairing.md](pairing.md)** — pairing flow, QR contents, cookies, device revoke.
+- **[relay.md](relay.md)** — one hostname for several Macs, routing, device picker.
+- **[access.md](access.md)** — token, rotation, logout, emergency access from the Mac.
+- **[configuration.md](configuration.md)** — all environment variables and files in `data/`.
+- **[architecture.md](architecture.md)** — `src/` layout, data flow, WebSocket.
+- **[api.md](api.md)** — list of HTTP and WebSocket endpoints.
+- **[security.md](security.md)** — threat model and limits.
+- **[troubleshooting.md](troubleshooting.md)** — common symptoms and their causes.
+- **[contributing.md](contributing.md)** — code rules and PR flow.
+- **[agent-conventions.md](agent-conventions.md)** — Bun tooling conventions for automated agents.
 
-## Prinsip desain
+## Design principles
 
-1. **Tidak butuh akun cloud.** Relay hanya jalur awal; kunci akses disimpan di
-   perangkat, bukan di server.
-2. **Satu perangkat aktif.** Satu waktu hanya satu HP/laptop yang mengemudikan
-   satu Mac, supaya dua pengendali tidak bertabrakan.
-3. **PWA tanpa build step.** `public/` disajikan apa adanya; tidak ada bundler.
-4. **Baterai diutamakan.** Capture berhenti saat tak ada penonton layar dan
-   melewati frame yang identik.
+1. **No cloud account needed.** The relay is only the entry path; access keys are
+   stored on the device, not on the server.
+2. **One active device.** Only one phone/laptop drives a Mac at a time, so two
+   controllers don't collide.
+3. **PWA with no build step.** `public/` is served as-is; there is no bundler.
+4. **Battery first.** Capture stops when no one is watching the screen and
+   skips identical frames.

@@ -1,56 +1,56 @@
-# Keamanan
+# Security
 
-Remote Agents memberi kendali penuh atas host kepada siapa pun yang memegang
-kredensial. Perlakukan seperti remote shell.
+Remote Agents gives full control of the host to anyone holding the credentials.
+Treat it like a remote shell.
 
-## Model ancaman
+## Threat model
 
-| Aset | Pelindung |
+| Asset | Protection |
 |---|---|
-| layar & input | cookie sesi bertanda tangan |
-| terminal & chat | cookie sesi |
-| berkas project | `ALLOWED_ROOTS` + kanonikalisasi |
-| client key | hanya di perangkat, mode 600 |
+| screen & input | signed session cookie |
+| terminal & chat | session cookie |
+| project files | `ALLOWED_ROOTS` + canonicalization |
+| client key | only on the device, mode 600 |
 
-## Aturan wajib
+## Required rules
 
-1. Bind ke `127.0.0.1` dan pakai tunnel, atau biarkan di LAN tepercaya.
-2. **Jangan** port-forward port ke internet.
-3. Token dan ID 9 digit setara password.
-4. Rotasi setelah perangkat hilang: `./scripts/rotate-token.sh --restart`.
-5. Review `clients.json` secara berkala; revoke yang tidak dikenal.
+1. Bind to `127.0.0.1` and use a tunnel, or keep it on a trusted LAN.
+2. **Don't** port-forward the port to the internet.
+3. The token and the 9-digit ID are equivalent to a password.
+4. Rotate after losing a device: `./scripts/rotate-token.sh --restart`.
+5. Review `clients.json` regularly; revoke anything you don't recognize.
 
-## Yang dilakukan sistem
+## What the system does
 
-- Cookie ditandatangani HMAC-SHA256, `HttpOnly`, `Secure`, `SameSite=Lax`.
-- `secret` dibuat acak saat pertama jalan, mode 600.
-- Kode pairing: sekali pakai, 5 menit, satu perangkat.
-- Rate limit login per IP (`allow_attempt`).
-- Path berkas dikanonikalisasi; symlink keluar `ALLOWED_ROOTS` ditolak.
-- Service worker tidak pernah menyimpan `/api/*` atau `/ws/*`.
-- Kode pairing tidak pernah dikirim ke relay (ada di fragment URL).
+- Cookies are signed HMAC-SHA256, `HttpOnly`, `Secure`, `SameSite=Lax`.
+- `secret` is generated randomly on first run, mode 600.
+- Pairing codes: single use, 5 minutes, one device.
+- Per-IP login rate limit (`allow_attempt`).
+- File paths are canonicalized; symlinks pointing outside `ALLOWED_ROOTS` are rejected.
+- The service worker never caches `/api/*` or `/ws/*`.
+- Pairing codes are never sent to the relay (they live in the URL fragment).
 
-## Yang tidak dilindungi
+## What is not protected
 
-| Risiko | Kenyataan |
+| Risk | Reality |
 |---|---|
-| relay melihat client key saat claim | TLS berhenti di VPS |
-| metadata relay | IP, waktu, ukuran trafik, Mac mana yang aktif |
-| satu perangkat aktif | perangkat lain diputus, bukan ditolak diam-diam |
-| `ra_device` bisa dipalsukan | cookie itu hanya memilih Mac, bukan autentikasi |
-| TCC macOS | rebuild app memerlukan izin ulang |
+| relay sees the client key during claim | TLS terminates at the VPS |
+| relay metadata | IP, time, traffic size, which Mac is active |
+| one active device | other devices are disconnected, not silently rejected |
+| `ra_device` can be forged | that cookie only selects a Mac, it isn't authentication |
+| macOS TCC | rebuilding the app requires re-granting permissions |
 
-## Distribusi
+## Distribution
 
-Tanpa Developer ID + notarization, Gatekeeper memblokir app di Mac lain:
+Without a Developer ID + notarization, Gatekeeper blocks the app on other Macs:
 
 ```sh
-./scripts/package-macos.sh --sign "Developer ID Application: Nama (TEAMID)"
+./scripts/package-macos.sh --sign "Developer ID Application: Name (TEAMID)"
 ```
 
-Izin TCC (Screen Recording, Accessibility) terikat pada tanda tangan biner,
-jadi setiap rebuild meminta izin ulang.
+TCC permissions (Screen Recording, Accessibility) are tied to the binary
+signature, so every rebuild asks for permission again.
 
-## Melaporkan masalah
+## Reporting issues
 
-Laporkan secara privat, jangan di issue publik.
+Report privately, not in a public issue.

@@ -15,7 +15,7 @@ echo "Folder: $ROOT"
 
 # 1. Homebrew
 if ! command -v brew >/dev/null 2>&1; then
-  die "Homebrew belum ada. Install dari https://brew.sh lalu jalankan lagi."
+  die "Homebrew not found. Install it from https://brew.sh and run again."
 fi
 ok "Homebrew"
 
@@ -24,8 +24,8 @@ for pkg in omp tmux; do
   if command -v "$pkg" >/dev/null 2>&1; then
     ok "$pkg"
   else
-    warn "$pkg belum ada — mencoba brew install…"
-    brew install "$pkg" || die "Gagal install $pkg"
+    warn "$pkg missing — trying brew install…"
+    brew install "$pkg" || die "Failed to install $pkg"
   fi
 done
 
@@ -38,13 +38,13 @@ if [[ ! -f .env ]]; then
   [[ -d "$PROJECT_DIR" ]] || PROJECT_DIR="$HOME"
   /usr/bin/sed -i '' "s|^OMP_CWD=.*|OMP_CWD=$PROJECT_DIR|" .env
   /usr/bin/sed -i '' "s|^ALLOWED_ROOTS=.*|ALLOWED_ROOTS=$HOME|" .env
-  ok ".env dibuat (project: $PROJECT_DIR)"
+  ok ".env created (project: $PROJECT_DIR)"
 else
-  ok ".env sudah ada"
+  ok ".env already exists"
 fi
 
 # 4. Build
-say "Build (beberapa menit pertama kali)…"
+say "Build (takes a few minutes the first time)…"
 cargo build --release
 ok "Binary: target/release/remot-agent"
 
@@ -56,14 +56,14 @@ ok "Device ID: $ID"
 
 # 6. macOS app bundle
 if [[ "$(uname)" == "Darwin" ]]; then
-  ./scripts/package-macos.sh >/dev/null 2>&1 && ok "App: dist/Remote Agents.app" || warn "Bundle .app gagal dibuat"
+  ./scripts/package-macos.sh >/dev/null 2>&1 && ok "App: dist/Remote Agents.app" || warn "Failed to build the .app bundle"
 fi
 
-say "Selesai."
+say "Done."
 cat <<TXT
-  1. Buka app:  open "dist/Remote Agents.app"
-     (atau: ./target/release/remot-agent)
-  2. Di Mac, izinkan Screen Recording + Accessibility saat diminta.
-  3. Scan QR dari HP, atau buka URL LAN dan masukkan ID.
-  4. Untuk akses dari luar rumah, lihat README bagian "Remote access".
+  1. Open the app:  open "dist/Remote Agents.app"
+     (or: ./target/release/remot-agent)
+  2. On the Mac, allow Screen Recording + Accessibility when prompted.
+  3. Scan the QR from your phone, or open the LAN URL and enter the ID.
+  4. For access from outside your home, see the README section "Access from outside your home".
 TXT

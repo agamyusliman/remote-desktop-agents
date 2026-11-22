@@ -1373,6 +1373,19 @@ button { -webkit-tap-highlight-color: transparent; }
 .remote-grid.view-split .chat-panel { display: flex !important; }
 .remote-grid.view-split .divider { display: grid !important; }
 
+/* Split follows the device: stacked above/below in portrait, side by side in
+   landscape (screen left, terminal right). The earlier landscape rule for
+   `.remote-grid` loses on specificity to `.remote-grid.view-split`, so this
+   override has to be equally specific and come after it. */
+@media (orientation: landscape) and (min-width: 820px) {
+  .remote-grid.view-split {
+    grid-template-columns: minmax(0, 1fr) 9px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .remote-grid.view-split .divider { cursor: col-resize; }
+  .remote-grid.view-split .divider span { width: 3px; height: 40px; }
+}
+
 /* ---------- swipe actions ---------- */
 .swipe { position: relative; overflow: hidden; border-radius: 12px; }
 .swipe-actions { position: absolute; inset: 0 0 0 auto; display: flex; }

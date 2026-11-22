@@ -1,111 +1,111 @@
 # Remote Agents
 
-Self-hosted remote desktop **dan** chat/terminal `omp` untuk HP atau tablet.
-Server Rust + PWA. Tanpa akun cloud, tanpa layanan pihak ketiga.
+Self-hosted remote desktop **and** `omp` chat/terminal for phone or tablet.
+Rust server + PWA. No cloud accounts, no third-party services.
 
-Kendalikan satu Mac dari mana saja: lihat layar, gerakkan mouse dan keyboard,
-jalankan `omp`, kelola project, dan jelajahi berkas — semuanya dari browser HP
-yang bisa dipasang sebagai app.
+Control one Mac from anywhere: view the screen, move the mouse and keyboard,
+run `omp`, manage projects, and browse files — all from a phone browser
+that installs as an app.
 
-> **Repo publik.** Tidak ada token, kunci perangkat, atau alamat server di sini.
-> Konfigurasi nyata hidup di `data/` dan `relay/devices.json`, keduanya
-> di-`.gitignore`. Lihat [docs/security.md](docs/security.md) sebelum deploy.
+> **Public repo.** No tokens, device keys, or server addresses here.
+> The real configuration lives in `data/` and `relay/devices.json`, both of
+> which are `.gitignore`d. See [docs/security.md](docs/security.md) before deploying.
 
-## Fitur
+## Features
 
-| Fitur | Keterangan |
+| Feature | Description |
 |---|---|
-| **Layar** | ScreenCaptureKit via `scap`, JPEG ~5 fps lewat WebSocket, input via `enigo` |
-| **Chat omp** | jembatan RPC (`omp --mode rpc-ui`), pemilih model, resume sesi, form ask |
-| **Terminal** | PTY nyata via `portable-pty` + tmux + xterm.js |
-| **Sesi** | daftar, resume, rename, dan hapus sesi omp tanpa keluar project |
-| **Project** | library ber-allowlist; tambah dengan memilih folder, hapus dari daftar |
-| **Berkas** | penjelajah pohon, penampil kode, pratinjau markdown |
-| **Sistem** | CPU, RAM, disk, jaringan, proses teratas |
-| **PWA** | install di iOS/Android; service worker hanya menyimpan shell |
-| **Hemat baterai** | capture berhenti tanpa penonton, melewati frame identik |
+| **Screen** | ScreenCaptureKit via `scap`, JPEG ~5 fps over WebSocket, input via `enigo` |
+| **omp chat** | RPC bridge (`omp --mode rpc-ui`), model picker, session resume, ask form |
+| **Terminal** | real PTY via `portable-pty` + tmux + xterm.js |
+| **Sessions** | list, resume, rename, and delete omp sessions without leaving the project |
+| **Projects** | allowlisted library; add by picking a folder, remove from the list |
+| **Files** | tree explorer, code viewer, markdown preview |
+| **System** | CPU, RAM, disk, network, top processes |
+| **PWA** | installs on iOS/Android; service worker caches the shell only |
+| **Battery saver** | capture stops when nobody is watching, identical frames are skipped |
 
-## Kebutuhan
+## Requirements
 
 - macOS 12.3+ (ScreenCaptureKit), Rust 1.85+
-- [`omp`](https://github.com/) terpasang (default `/opt/homebrew/bin/omp`)
+- [`omp`](https://github.com/) installed (default `/opt/homebrew/bin/omp`)
 - `tmux`
-- Opsional: VPS untuk relay (nginx), `cloudflared` atau `tailscale`
+- Optional: a VPS for the relay (nginx), `cloudflared` or `tailscale`
 
-## Mulai cepat
+## Quick start
 
 ```sh
 git clone https://github.com/agamyusliman/remote-desktop-agents.git
 cd remote-desktop-agents
-./scripts/setup.sh          # buat data/, token, .env
-$EDITOR .env                # set OMP_CWD dan ALLOWED_ROOTS
+./scripts/setup.sh          # create data/, token, .env
+$EDITOR .env                # set OMP_CWD and ALLOWED_ROOTS
 cargo build --release
 set -a; source .env; set +a
 ./target/release/remot-agent
 ```
 
-Atau pakai app desktop:
+Or use the desktop app:
 
 ```sh
 ./scripts/package-macos.sh --install   # → /Applications/Remote Agents.app
 ```
 
-Lalu:
+Then:
 
-1. Buka app, izinkan **Screen Recording** dan **Accessibility**, jalankan ulang.
-2. Tab **Hubungkan** → **Buat kode pairing**.
-3. Scan QR dari HP, atau ketik kodenya.
+1. Open the app, allow **Screen Recording** and **Accessibility**, then relaunch.
+2. **Connect** tab → **Create pairing code**.
+3. Scan the QR from your phone, or type the code.
 
-Panduan lengkap: [docs/getting-started.md](docs/getting-started.md).
+Full guide: [docs/getting-started.md](docs/getting-started.md).
 
-## Akses dari luar rumah
+## Access from outside your home
 
-Jangan pernah membuka port `8788` ke internet. Pilihan:
+Never expose port `8788` to the internet. Options:
 
-| Cara | Catatan |
+| Method | Notes |
 |---|---|
-| Relay nginx di VPS | satu hostname untuk beberapa Mac — [docs/relay.md](docs/relay.md) |
-| Tailscale | `tailscale serve 8788`, privat tanpa domain |
-| Cloudflare named tunnel | `./scripts/setup-named-tunnel.sh remote.domainmu.com` |
-| Quick tunnel | `./scripts/tunnel.sh`, URL acak untuk uji coba |
+| nginx relay on a VPS | one hostname for several Macs — [docs/relay.md](docs/relay.md) |
+| Tailscale | `tailscale serve 8788`, private, no domain |
+| Cloudflare named tunnel | `./scripts/setup-named-tunnel.sh remote.yourdomain.com` |
+| Quick tunnel | `./scripts/tunnel.sh`, random URL for testing |
 
-## Keamanan singkat
+## Security in brief
 
-- Cookie sesi ditandatangani HMAC (`HttpOnly`, `Secure`); klien pairing memakai
-  kunci bearer yang disimpan di HP dan di `clients.json` Mac.
-- Setiap endpoint berkas dibatasi `ALLOWED_ROOTS`.
-- Relay menolak `/api/*` tanpa cookie perangkat dengan `401 JSON`, bukan halaman.
-- Hapus perangkat dari daftar di app desktop untuk memutus akses.
-- Rotasi semua akses: `./scripts/rotate-token.sh --restart`.
+- Session cookies are HMAC-signed (`HttpOnly`, `Secure`); pairing clients use
+  a bearer key stored on the phone and in `clients.json` on the Mac.
+- Every file endpoint is restricted by `ALLOWED_ROOTS`.
+- The relay rejects `/api/*` without a device cookie with `401 JSON`, not a page.
+- Remove a device from the list in the desktop app to cut off access.
+- Rotate every credential: `./scripts/rotate-token.sh --restart`.
 
-Detail model ancaman: [docs/security.md](docs/security.md).
+Threat model details: [docs/security.md](docs/security.md).
 
-## Dokumentasi
+## Documentation
 
-| Dokumen | Isi |
+| Document | Contents |
 |---|---|
-| [docs/getting-started.md](docs/getting-started.md) | install, izin macOS, alur UI, langkah pertama |
-| [docs/pairing.md](docs/pairing.md) | alur pairing, isi QR, cookie, revoke |
-| [docs/relay.md](docs/relay.md) | satu hostname untuk beberapa Mac |
-| [docs/access.md](docs/access.md) | token, rotasi, akses darurat |
-| [docs/configuration.md](docs/configuration.md) | env var, isi direktori data, preferensi klien |
-| [docs/architecture.md](docs/architecture.md) | struktur kode dan alur data |
-| [docs/api.md](docs/api.md) | endpoint HTTP, WebSocket, format sesi |
-| [docs/security.md](docs/security.md) | model ancaman dan batasan |
-| [docs/troubleshooting.md](docs/troubleshooting.md) | gejala umum dan penyebabnya |
-| [docs/contributing.md](docs/contributing.md) | aturan kode dan alur PR |
+| [docs/getting-started.md](docs/getting-started.md) | install, macOS permissions, UI flow, first steps |
+| [docs/pairing.md](docs/pairing.md) | pairing flow, QR contents, cookies, revoke |
+| [docs/relay.md](docs/relay.md) | one hostname for several Macs |
+| [docs/access.md](docs/access.md) | token, rotation, emergency access |
+| [docs/configuration.md](docs/configuration.md) | env vars, data directory contents, client preferences |
+| [docs/architecture.md](docs/architecture.md) | code structure and data flow |
+| [docs/api.md](docs/api.md) | HTTP endpoints, WebSocket, session format |
+| [docs/security.md](docs/security.md) | threat model and limits |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | common symptoms and causes |
+| [docs/contributing.md](docs/contributing.md) | code rules and PR flow |
 
-## Struktur singkat
+## Layout
 
 ```
-src/        server Rust (axum): capture, input, terminal, rpc, pairing, auth
+src/        Rust server (axum): capture, input, terminal, rpc, pairing, auth
 public/     PWA: index.html, app.js, style.css, sw.js, vendor/
-relay/      konfigurasi nginx + contoh devices
-scripts/    setup, packaging, tunnel, relay, rotasi token
-docs/       dokumentasi
-data/       state runtime — TIDAK di-commit
+relay/      nginx config + example devices
+scripts/    setup, packaging, tunnel, relay, token rotation
+docs/       documentation
+data/       runtime state — NOT committed
 ```
 
-## Lisensi
+## License
 
-MIT — lihat [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

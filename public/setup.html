@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -24,14 +24,14 @@
       <img src="/icons/logo-96.png" alt="" width="30" height="30">
       <div class="rail-title">
         <b>Remote Agents</b>
-        <span id="headSub">memuat…</span>
+        <span id="headSub">loading…</span>
       </div>
     </div>
 
     <nav class="rail-nav" role="tablist">
-      <button class="nav active" data-tab="connect" role="tab"><svg class="ico" width="16" height="16"><use href="#i-connect"/></svg><span>Hubungkan</span></button>
-      <button class="nav" data-tab="devices" role="tab"><svg class="ico" width="16" height="16"><use href="#i-devices"/></svg><span>Perangkat</span></button>
-      <button class="nav" data-tab="settings" role="tab"><svg class="ico" width="16" height="16"><use href="#i-settings"/></svg><span>Pengaturan</span></button>
+      <button class="nav active" data-tab="connect" role="tab"><svg class="ico" width="16" height="16"><use href="#i-connect"/></svg><span>Connect</span></button>
+      <button class="nav" data-tab="devices" role="tab"><svg class="ico" width="16" height="16"><use href="#i-devices"/></svg><span>Devices</span></button>
+      <button class="nav" data-tab="settings" role="tab"><svg class="ico" width="16" height="16"><use href="#i-settings"/></svg><span>Settings</span></button>
     </nav>
 
     <div class="rail-foot">
@@ -41,37 +41,37 @@
   </aside>
 
   <main class="stage">
-    <!-- ---------- Hubungkan (default view) ---------- -->
+    <!-- ---------- Connect (default view) ---------- -->
     <section class="pane active" id="pane-connect">
       <div class="two">
         <div class="pair-card">
           <div id="qrBox" class="qr is-empty">
             <img class="qr-ghost" src="/icons/logo-192.png" alt="" width="72" height="72">
-            <span>Belum ada kode</span>
+            <span>No code yet</span>
           </div>
           <div id="pairCode" class="code">— — — —</div>
-          <div id="pairHint" class="hint">Tekan tombol untuk membuat kode</div>
-          <button id="pairNew" class="btn primary wide">Buat kode pairing</button>
+          <div id="pairHint" class="hint">Press the button to create a code</div>
+          <button id="pairNew" class="btn primary wide">Create pairing code</button>
         </div>
 
         <div class="col">
           <div class="card">
             <div class="card-row">
-              <div><span class="k">Perangkat ini</span><b id="connName">—</b></div>
+              <div><span class="k">This device</span><b id="connName">—</b></div>
               <span class="pill" id="connPill">—</span>
             </div>
             <div class="card-row">
               <div><span class="k">ID</span><b id="deviceId" class="mono">—</b></div>
-              <button class="link" id="copyId">salin</button>
+              <button class="link" id="copyId">copy</button>
             </div>
             <div class="card-row">
-              <div><span class="k">Alamat relay</span><b id="connRelay" class="mono">—</b></div>
+              <div><span class="k">Relay address</span><b id="connRelay" class="mono">—</b></div>
             </div>
           </div>
 
           <div class="card">
             <div class="card-row">
-              <div><span class="k">Alamat lokal</span><b id="connLan" class="mono">—</b></div>
+              <div><span class="k">Local address</span><b id="connLan" class="mono">—</b></div>
             </div>
             <div class="card-row">
               <div><span class="k">omp</span><b id="connOmp">—</b></div>
@@ -82,25 +82,25 @@
           </div>
 
           <div class="hint-list">
-            <div class="hl"><b>1</b> Tekan “Buat kode pairing”.</div>
-            <div class="hl"><b>2</b> Buka app mobile, scan QR.</div>
-            <div class="hl"><b>3</b> Kunci tersimpan di HP dan di Mac ini.</div>
+            <div class="hl"><b>1</b> Press “Create pairing code”.</div>
+            <div class="hl"><b>2</b> Open the mobile app, scan the QR.</div>
+            <div class="hl"><b>3</b> Keys are stored on the phone and on this Mac.</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ---------- Perangkat ---------- -->
+    <!-- ---------- Devices ---------- -->
     <section class="pane" id="pane-devices">
       <div class="pad"><div id="clients" class="rows">—</div></div>
     </section>
 
-    <!-- ---------- Pengaturan ---------- -->
+    <!-- ---------- Settings ---------- -->
     <section class="pane" id="pane-settings">
       <form id="cfgForm" class="settings" autocomplete="off">
         <div class="set-col">
           <section class="set-group">
-            <h3>Perizinan</h3>
+            <h3>Permissions</h3>
             <div class="rows" id="permRows">—</div>
           </section>
 
@@ -111,49 +111,49 @@
                 <option value="3">3</option><option value="5">5</option><option value="8">8</option>
                 <option value="12">12</option><option value="15">15</option>
               </select></label>
-              <label>Kualitas<select name="jpegQuality">
+              <label>Quality<select name="jpegQuality">
                 <option value="45">45</option><option value="55">55</option><option value="62">62</option>
                 <option value="72">72</option><option value="82">82</option>
               </select></label>
-              <label>Resolusi<select name="resolution">
+              <label>Resolution<select name="resolution">
                 <option value="720p">720p</option><option value="1080p">1080p</option>
               </select></label>
             </div>
           </section>
 
           <section class="set-group">
-            <h3>Sistem</h3>
-            <label class="checkrow"><span class="ck-text">Wajib pairing <em>ID saja tidak bisa login</em></span><input type="checkbox" name="requirePairing"></label>
-            <label class="checkrow"><span class="ck-text">Jalankan otomatis <em>Saat login Mac</em></span><input type="checkbox" id="prefAutostart"></label>
+            <h3>System</h3>
+            <label class="checkrow"><span class="ck-text">Require pairing <em>an ID alone cannot sign in</em></span><input type="checkbox" name="requirePairing"></label>
+            <label class="checkrow"><span class="ck-text">Launch at login <em>when the Mac user logs in</em></span><input type="checkbox" id="prefAutostart"></label>
           </section>
         </div>
 
         <div class="set-col">
           <section class="set-group">
-            <h3>Koneksi</h3>
+            <h3>Connection</h3>
             <div class="grid2">
               <label>Port<input name="port" type="number" min="1024" max="65535"></label>
-              <label>Durasi login (hari)<input name="sessionTtlDays" type="number" min="1" max="3650"></label>
+              <label>Login duration (days)<input name="sessionTtlDays" type="number" min="1" max="3650"></label>
             </div>
-            <label>URL publik<input name="publicUrl" placeholder="https://remote.example.com"></label>
+            <label>Public URL<input name="publicUrl" placeholder="https://remote.example.com"></label>
             <div class="grid2">
-              <label>Key relay<input name="relayKey" placeholder="a" maxlength="8"></label>
-              <label>Nama perangkat<input name="deviceName" maxlength="48" placeholder="MacBook Pro"></label>
+              <label>Relay key<input name="relayKey" placeholder="a" maxlength="8"></label>
+              <label>Device name<input name="deviceName" maxlength="48" placeholder="MacBook Pro"></label>
             </div>
           </section>
 
           <section class="set-group">
             <h3>Workspace</h3>
-            <label>Folder project omp
+            <label>omp project folder
               <span class="pick">
-                <input name="ompCwd" placeholder="/Users/kamu">
-                <button type="button" class="pick-btn" data-pick="ompCwd" title="Pilih folder">Pilih</button>
+                <input name="ompCwd" placeholder="/Users/you">
+                <button type="button" class="pick-btn" data-pick="ompCwd" title="Choose folder">Choose</button>
               </span>
             </label>
-            <label>Folder yang boleh diakses
+            <label>Allowed folders
               <span class="pick">
-                <input name="allowedRoots" placeholder="/Users/kamu/Documents">
-                <button type="button" class="pick-btn" data-pick="allowedRoots" title="Pilih folder">Pilih</button>
+                <input name="allowedRoots" placeholder="/Users/you/Documents">
+                <button type="button" class="pick-btn" data-pick="allowedRoots" title="Choose folder">Choose</button>
               </span>
             </label>
             <label>Binary omp<input name="ompBin" placeholder="/opt/homebrew/bin/omp"></label>
@@ -161,8 +161,8 @@
 
           <section class="set-group actions-group">
             <p id="cfgMsg" class="msg"></p>
-            <p id="restartHint" class="hint-line hidden">Perubahan ini butuh restart agar berlaku.</p>
-            <button type="submit" class="btn primary wide" id="saveBtn">Simpan perubahan</button>
+            <p id="restartHint" class="hint-line hidden">These changes need a restart to take effect.</p>
+            <button type="submit" class="btn primary wide" id="saveBtn">Save changes</button>
             <p id="footInfo" class="foot">—</p>
           </section>
         </div>
@@ -173,15 +173,15 @@
 <div id="picker" class="picker hidden">
   <div class="picker-card">
     <header class="picker-head">
-      <b id="pickerTitle">Pilih folder</b>
-      <button type="button" id="pickerClose" class="link"><svg class="bi" width="14" height="14"><use href="#i-close"/></svg> tutup</button>
+      <b id="pickerTitle">Choose folder</b>
+      <button type="button" id="pickerClose" class="link"><svg class="bi" width="14" height="14"><use href="#i-close"/></svg> close</button>
     </header>
     <div class="picker-path" id="pickerPath"></div>
     <div class="picker-body" id="pickerList"></div>
     <footer class="picker-foot">
-      <button type="button" id="pickerUp" class="btn ghost"><svg class="bi" width="14" height="14"><use href="#i-up"/></svg> naik</button>
+      <button type="button" id="pickerUp" class="btn ghost"><svg class="bi" width="14" height="14"><use href="#i-up"/></svg> up</button>
       <button type="button" id="pickerHome" class="btn ghost"><svg class="bi" width="14" height="14"><use href="#i-home"/></svg> home</button>
-      <button type="button" id="pickerChoose" class="btn primary"><svg class="bi" width="14" height="14"><use href="#i-check"/></svg> Pilih folder ini</button>
+      <button type="button" id="pickerChoose" class="btn primary"><svg class="bi" width="14" height="14"><use href="#i-check"/></svg> Choose this folder</button>
     </footer>
   </div>
 </div>

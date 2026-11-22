@@ -146,7 +146,7 @@ async function boot() {
     document.cookie = `ra_device=${window.__RA_DEVICE}; path=/; max-age=31536000; SameSite=Lax; Secure`;
   }
   if (new URLSearchParams(location.search).get("offline") === "1") {
-    showToast("Perangkat sedang offline. Nyalakan app desktop.", 5000);
+    showToast("Device is offline. Start the desktop app.", 5000);
   }
   // A QR link lands here (the relay redirects /pair and keeps #c=), so redeem
   // it in this same UI instead of rendering a second pairing page.
@@ -192,9 +192,9 @@ function showMoved() {
     gate.className = "login";
     gate.innerHTML = `
       <img class="login-mark" src="/icons/icon-192.png" alt="Remote Agents" width="56" height="56">
-      <h1>Sesi pindah</h1>
-      <p class="login-sub">Perangkat ini tidak lagi aktif. Satu waktu hanya satu perangkat yang bisa dipakai.</p>
-      <a class="btn primary" href="/?picker=1">Pilih perangkat</a>`;
+      <h1>Session moved</h1>
+      <p class="login-sub">This device is no longer active. Only one device can be used at a time.</p>
+      <a class="btn primary" href="/?picker=1">Choose device</a>`;
     document.body.append(gate);
   }
   gate.classList.remove("hidden");
@@ -235,7 +235,7 @@ $("loginForm").addEventListener("submit", async (event) => {
   if (looksLikeCode) {
     const code = raw.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     if (!(await claimPairingCode(code))) {
-      $("loginErr").textContent = "Kode salah atau kedaluwarsa.";
+      $("loginErr").textContent = "Wrong code or expired.";
       return;
     }
     $("token").value = "";
@@ -248,7 +248,7 @@ $("loginForm").addEventListener("submit", async (event) => {
     body: JSON.stringify({ token: raw }),
   });
   if (!res.ok) {
-    $("loginErr").textContent = res.status === 429 ? "Terlalu banyak percobaan." : "Token salah.";
+    $("loginErr").textContent = res.status === 429 ? "Too many attempts." : "Wrong token.";
     return;
   }
   $("token").value = "";
@@ -364,14 +364,14 @@ function updateStatus() {
   // capture.ok only says whether the screen pipeline is streaming right now,
   // which is lazy: it starts when a viewer connects.
   const captureIssue = !!capture.error;
-  $("heroState").textContent = captureIssue ? "perlu izin" : "online";
+  $("heroState").textContent = captureIssue ? "needs permission" : "online";
   $("heroState").className = `pill ${captureIssue ? "warn" : "ok"}`;
   $("homeSub").textContent = capture.ok
     ? `omp ready · screen ${capture.width}×${capture.height} · ${s.screenClients || 0} viewer`
-    : (capture.error || "menunggu screen capture");
+    : (capture.error || "waiting for screen capture");
 
   if (input.trusted === false) {
-    showToast("Accessibility belum diizinkan: mouse/keyboard layar tidak aktif.", 8000);
+    showToast("Accessibility is not allowed yet: on-screen mouse/keyboard is inactive.", 8000);
   }
 }
 
@@ -475,14 +475,14 @@ function projectCard(project, compact = false) {
   if (!compact) {
     const open = document.createElement("span");
     open.className = "meta";
-    open.textContent = project.id === state.projectId ? "aktif · buka remote" : "tap untuk buka";
+    open.textContent = project.id === state.projectId ? "active · open remote" : "tap to open";
     button.append(open);
   }
   button.addEventListener("click", () => openProject(project.id));
   const canEdit = project.id && project.id !== "workspace";
   if (!canEdit) return button;
   return attachSwipe(button, [{
-    label: "Hapus",
+    label: "Remove",
     danger: true,
     icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg>',
     onTap: () => deleteProject(project),
@@ -491,15 +491,15 @@ function projectCard(project, compact = false) {
 
 async function deleteProject(project) {
   const ok = await askConfirm({
-    title: "Hapus dari daftar?",
-    message: `"${project.name || project.id}" dihapus dari daftar project. Folder di laptop TIDAK dihapus.`,
-    okLabel: "Hapus",
+    title: "Remove from list?",
+    message: `"${project.name || project.id}" is removed from the project list. The folder on the laptop is NOT deleted.`,
+    okLabel: "Remove",
     danger: true,
   });
   if (!ok) return;
   const res = await api(`/api/projects/${encodeURIComponent(project.id)}`, { method: "DELETE" });
   if (!res.ok) {
-    showToast((await res.text()) || "gagal menghapus", 4200);
+    showToast((await res.text()) || "failed to remove", 4200);
     return;
   }
   if (state.projectId === project.id) {
@@ -508,7 +508,7 @@ async function deleteProject(project) {
     closeTerminal();
   }
   await loadProjects();
-  showToast("Dihapus dari daftar", 2600);
+  showToast("Removed from list", 2600);
 }
 
 /* ================= dialog ================= */
@@ -525,9 +525,9 @@ function showDialog({ title, message, value, okLabel, cancelLabel, danger, withI
   input.classList.toggle("hidden", !withInput);
   input.value = value || "";
   const ok = $("dlgOk");
-  ok.textContent = okLabel || (withInput ? "Simpan" : "Lanjut");
+  ok.textContent = okLabel || (withInput ? "Save" : "Continue");
   ok.classList.toggle("danger", !!danger);
-  $("dlgCancel").textContent = cancelLabel || "Batal";
+  $("dlgCancel").textContent = cancelLabel || "Cancel";
   modal.classList.remove("hidden");
   if (withInput) setTimeout(() => { input.focus(); input.select(); }, 60);
 
@@ -675,7 +675,7 @@ async function loadBrowse(path) {
   list.textContent = "";
   const res = await api(`/api/browse?path=${encodeURIComponent(path)}`);
   if (!res.ok) {
-    showToast("Folder tidak bisa dibuka", 3200);
+    showToast("Cannot open folder", 3200);
     return;
   }
   const data = await res.json();
@@ -688,7 +688,7 @@ async function loadBrowse(path) {
   if (!data.dirs?.length) {
     const empty = document.createElement("div");
     empty.className = "browse-empty";
-    empty.textContent = "Tidak ada subfolder di sini.";
+    empty.textContent = "No subfolders here.";
     list.append(empty);
     return;
   }
@@ -723,13 +723,13 @@ $("browsePick")?.addEventListener("click", async () => {
     body: JSON.stringify({ path: folder }),
   });
   if (!res.ok) {
-    showToast((await res.text()) || "gagal menambah project", 5000);
+    showToast((await res.text()) || "failed to add project", 5000);
     return;
   }
   const project = await res.json();
   await loadProjects();
   openProject(project.id);
-  showToast(`Ditambahkan: ${project.name}`, 2600);
+  showToast(`Added: ${project.name}`, 2600);
 });
 
 $("remoteProject").addEventListener("click", () => go("projects"));
@@ -913,6 +913,13 @@ document.querySelectorAll("[data-btn]").forEach((button) => {
   button.addEventListener("click", () => {
     document.querySelectorAll("[data-btn]").forEach((b) => b.classList.remove("active"));
     button.classList.add("active");
+    // Touch devices never show the tooltip, so say what the mode does.
+    showToast(
+      button.dataset.btn === "right"
+        ? "Tap on the screen now sends a right click"
+        : "Tap on the screen now sends a left click",
+      1800,
+    );
   });
 });
 
@@ -989,7 +996,7 @@ canvas.addEventListener("pointerdown", (event) => {
     state.tapStart = null;
     sendControl({ t: "down", ...p, button: "right" });
     setTimeout(() => sendControl({ t: "up", ...p, button: "right" }), 60);
-    showToast("klik kanan", 900);
+    showToast("right click", 900);
   }, 550);
 });
 
@@ -1370,7 +1377,7 @@ async function showTermEmpty(switching = termSwitcher) {
   if (!sessions.length) {
     const none = document.createElement("div");
     none.className = "te-hint";
-    none.textContent = "Belum ada sesi tersimpan di project ini.";
+    none.textContent = "No saved sessions in this project yet.";
     list.append(none);
     return;
   }
@@ -1386,15 +1393,15 @@ async function showTermEmpty(switching = termSwitcher) {
     name.textContent = session.title || session.id;
     const date = document.createElement("span");
     date.className = "ts-date";
-    date.textContent = new Date((session.mtime || 0) * 1000).toLocaleDateString("id-ID");
+    date.textContent = new Date((session.mtime || 0) * 1000).toLocaleDateString("en-US");
     open.append(name, date);
     open.addEventListener("click", () => resumeTermSession(session));
 
     const rename = document.createElement("button");
     rename.type = "button";
     rename.className = "te-rename";
-    rename.title = "Ganti nama sesi";
-    rename.setAttribute("aria-label", "Ganti nama sesi");
+    rename.title = "Rename session";
+    rename.setAttribute("aria-label", "Rename session");
     rename.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4zM13 6l4 4"/></svg>';
     rename.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -1404,8 +1411,8 @@ async function showTermEmpty(switching = termSwitcher) {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "te-del";
-    remove.title = "Hapus sesi";
-    remove.setAttribute("aria-label", "Hapus sesi");
+    remove.title = "Delete session";
+    remove.setAttribute("aria-label", "Delete session");
     remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v5M14 11v5"/></svg>';
     remove.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -1425,10 +1432,10 @@ async function showTermEmpty(switching = termSwitcher) {
 async function renameSession(session) {
   const current = session.title || session.id;
   const next = await askText({
-    title: "Ganti nama sesi",
-    message: "Nama tersimpan di file sesi, jadi omp juga memakai nama ini.",
+    title: "Rename session",
+    message: "The name is stored in the session file, so omp uses it too.",
     value: current,
-    okLabel: "Simpan",
+    okLabel: "Save",
   });
   if (next === null) return;
   const label = String(next).trim();
@@ -1439,19 +1446,19 @@ async function renameSession(session) {
     body: JSON.stringify({ path: session.path, label }),
   });
   if (!res.ok) {
-    showToast("Gagal mengganti nama sesi", 3600);
+    showToast("Failed to rename session", 3600);
     return;
   }
   showTermEmpty();
-  showToast("Nama sesi diperbarui", 2400);
+  showToast("Session renamed", 2400);
 }
 
 /// Deletes the session file itself, so omp no longer lists it either.
 async function deleteSession(session) {
   const ok = await askConfirm({
-    title: "Hapus sesi ini?",
-    message: `"${session.title || session.id}" dihapus permanen dari riwayat omp.`,
-    okLabel: "Hapus",
+    title: "Delete this session?",
+    message: `"${session.title || session.id}" is permanently removed from omp history.`,
+    okLabel: "Delete",
     danger: true,
   });
   if (!ok) return;
@@ -1461,11 +1468,11 @@ async function deleteSession(session) {
     body: JSON.stringify({ path: session.path }),
   });
   if (!res.ok) {
-    showToast("Gagal menghapus sesi", 3600);
+    showToast("Failed to delete session", 3600);
     return;
   }
   showTermEmpty();
-  showToast("Sesi dihapus", 2400);
+  showToast("Session deleted", 2400);
 }
 
 function hideTermEmpty() {
@@ -1912,11 +1919,11 @@ function renderSettings() {
     `session ${s.session || "omp"} · cwd ${s.cwd || "—"} · input ${s.input?.trusted ? "ok" : "no permission"}`;
   const publicUrl = s.network?.publicUrl;
   const ttlDays = s.network?.sessionTtlDays;
-  $("settingsPublic").textContent = publicUrl || "belum ada tunnel";
+  $("settingsPublic").textContent = publicUrl || "no tunnel yet";
   if ($("ttlInfo")) {
     $("ttlInfo").textContent = ttlDays
-      ? `Cookie berlaku ${ttlDays} hari sejak login; diperbarui saat login ulang.`
-      : "Cookie berlaku selama konfigurasi SESSION_TTL_DAYS.";
+      ? `Cookie valid for ${ttlDays} days after login; refreshed on re-login.`
+      : "Cookie validity follows the SESSION_TTL_DAYS setting.";
   }
   if ($("ttlPill")) $("ttlPill").textContent = ttlDays ? `${ttlDays}d` : "—";
   $("settingsTunnelState").textContent = publicUrl ? "online" : "LAN only";
@@ -2054,10 +2061,10 @@ $("btnInputMode")?.addEventListener("click", () => {
   btn.textContent = pad ? "pad" : "scroll";
   btn.classList.toggle("active", pad);
   btn.title = pad
-    ? "Mode touchpad: geser = gerakkan kursor"
-    : "Mode scroll: geser = gulir layar";
+    ? "Touchpad mode: drag = move cursor"
+    : "Scroll mode: drag = scroll the screen";
   localStorage.setItem("ra.inputMode", state.inputMode);
-  showToast(pad ? "Mode touchpad" : "Mode scroll", 1200);
+  showToast(pad ? "Touchpad mode" : "Scroll mode", 1200);
 });
 
 $("btnClick")?.addEventListener("click", () => {
@@ -2181,7 +2188,7 @@ async function openFile(entry) {
   const project = state.projectId || "";
   const res = await api(`/api/files/read?project=${encodeURIComponent(project)}&path=${encodeURIComponent(entry.abs || entry.path)}`);
   if (!res.ok) {
-    body.textContent = (await res.text()) || "gagal membaca file";
+    body.textContent = (await res.text()) || "failed to read file";
     return;
   }
   const data = await res.json();
@@ -2315,12 +2322,12 @@ window.addEventListener("beforeinstallprompt", (event) => {
 window.addEventListener("appinstalled", () => {
   installPrompt = null;
   $("btnInstall")?.classList.add("hidden");
-  showToast("Remote Agents dipasang sebagai app", 2600);
+  showToast("Remote Agents installed as an app", 2600);
 });
 
 $("btnInstall")?.addEventListener("click", async () => {
   if (!installPrompt) {
-    showToast("Gunakan menu browser → Add to Home Screen / Install app", 5000);
+    showToast("Use the browser menu → Add to Home Screen / Install app", 5000);
     return;
   }
   installPrompt.prompt();
@@ -2399,15 +2406,15 @@ function showUpdateBar(reg) {
   const bar = document.createElement("div");
   bar.id = "updateBar";
   bar.className = "update-bar";
-  bar.innerHTML = '<span>Versi baru tersedia</span>';
+  bar.innerHTML = '<span>New version available</span>';
   const go = document.createElement("button");
-  go.textContent = "Muat ulang";
+  go.textContent = "Reload";
   go.addEventListener("click", () => {
     reg?.waiting?.postMessage({ type: "SKIP_WAITING" });
     setTimeout(() => location.reload(), 250);
   });
   const later = document.createElement("button");
-  later.textContent = "nanti";
+  later.textContent = "later";
   later.className = "ghost";
   later.addEventListener("click", () => bar.remove());
   bar.append(go, later);
@@ -2537,14 +2544,14 @@ async function renderRecentDevices() {
   if (!devices.length) {
     const empty = document.createElement("div");
     empty.className = "dl-empty";
-    empty.textContent = "Belum ada perangkat. Scan QR dari app desktop.";
+    empty.textContent = "No devices yet. Scan the QR from the desktop app.";
     wrap.append(empty);
     return;
   }
 
   const head = document.createElement("div");
   head.className = "dl-head";
-  head.textContent = fromRelay ? "Perangkat" : "Tersimpan di perangkat ini";
+  head.textContent = fromRelay ? "Devices" : "Saved on this device";
   wrap.append(head);
 
   for (const device of devices) {
@@ -2561,7 +2568,7 @@ async function renderRecentDevices() {
     name.textContent = device.name || device.id || device.key;
     const sub = document.createElement("span");
     const trusted = device.id && trustedKeys()[String(device.id)];
-    sub.textContent = `${device.id || device.key || ""}${trusted ? " · tersambung" : " · perlu pairing"}`;
+    sub.textContent = `${device.id || device.key || ""}${trusted ? " · connected" : " · needs pairing"}`;
     main.append(name, sub);
 
     const chev = document.createElement("span");
@@ -2686,10 +2693,10 @@ async function claimPairingCode(code, relayKey = "") {
     // Surface the real reason instead of always blaming expiry.
     if ($("loginErr")) {
       $("loginErr").textContent =
-        res.status === 429 ? "Terlalu banyak percobaan. Tunggu sebentar."
-        : res.status === 401 ? "Kode salah atau sudah dipakai."
-        : res.status === 418 ? "Relay tidak mengenali perangkat ini."
-        : `Gagal menghubungi relay (${res.status}).`;
+        res.status === 429 ? "Too many attempts. Wait a moment."
+        : res.status === 401 ? "Wrong code or already used."
+        : res.status === 418 ? "Relay does not recognize this device."
+        : `Failed to reach relay (${res.status}).`;
     }
     return false;
   }
@@ -2710,15 +2717,15 @@ async function loginWithToken(token) {
     body: JSON.stringify({ token }),
   });
   if (!res.ok) {
-    $("loginErr").textContent = res.status === 429 ? "Terlalu banyak percobaan." : "QR/token tidak valid.";
+    $("loginErr").textContent = res.status === 429 ? "Too many attempts." : "QR/token invalid.";
     return false;
   }
   stopScanner();
   const device = {
     id: token,
-    name: $("deviceHint")?.textContent?.startsWith("Menghubungkan ke ")
-      ? $("deviceHint").textContent.replace(/^Menghubungkan ke |…$/g, "")
-      : (state.status?.deviceName || "Perangkat"),
+    name: $("deviceHint")?.textContent?.startsWith("Connecting to ")
+      ? $("deviceHint").textContent.replace(/^Connecting to |…$/g, "")
+      : (state.status?.deviceName || "Device"),
     url: location.origin,
   };
   rememberDevice(device);
@@ -2749,14 +2756,14 @@ async function openScanner() {
   const hint = $("scanHint");
   if (!modal || !video) return;
   modal.classList.remove("hidden");
-  hint.textContent = "Meminta izin kamera…";
+  hint.textContent = "Requesting camera permission…";
 
   if (!window.isSecureContext) {
-    hint.textContent = "Kamera hanya bisa di HTTPS (tunnel) atau localhost.";
+    hint.textContent = "Camera only works over HTTPS (tunnel) or localhost.";
     return;
   }
   if (!navigator.mediaDevices?.getUserMedia) {
-    hint.textContent = "Browser ini tidak mendukung kamera langsung. Gunakan “Pilih foto QR”.";
+    hint.textContent = "This browser does not support direct camera access. Use “Choose QR photo”.";
     return;
   }
 
@@ -2767,10 +2774,10 @@ async function openScanner() {
     });
     video.srcObject = scanStream;
     await video.play().catch(() => {});
-    hint.textContent = "Arahkan kamera ke QR di app desktop.";
+    hint.textContent = "Point the camera at the QR in the desktop app.";
     scanTimer = setInterval(scanTick, 300);
   } catch (err) {
-    hint.textContent = "Kamera tidak bisa dibuka. Gunakan “Pilih foto QR” atau izinkan kamera.";
+    hint.textContent = "Cannot open the camera. Use “Choose QR photo” or allow camera access.";
   }
 }
 
@@ -2804,7 +2811,7 @@ async function scanTick() {
         stopScanner();
         $("token").value = info.code.slice(0, 3) + (info.code.length > 3 ? "-" + info.code.slice(3) : "");
         if (!(await claimPairingCode(info.code, info.key))) {
-          $("loginErr").textContent = "Kode QR sudah kedaluwarsa. Buat kode baru di app desktop.";
+          $("loginErr").textContent = "QR code expired. Create a new code in the desktop app.";
         }
         return;
       }
@@ -2812,12 +2819,12 @@ async function scanTick() {
         stopScanner();
         $("token").value = info.token;
         if (!(await loginWithToken(info.token))) {
-          $("loginErr").textContent = "QR ditolak.";
+          $("loginErr").textContent = "QR rejected.";
         }
         return;
       }
       // Recognisable QR, but nothing usable in it.
-      if ($("scanHint")) $("scanHint").textContent = "QR tidak dikenali. Pastikan itu QR dari app desktop.";
+      if ($("scanHint")) $("scanHint").textContent = "Unrecognized QR. Make sure it is a QR from the desktop app.";
     }
   } finally {
     scanBusy = false;
@@ -2840,14 +2847,14 @@ $("qrFile")?.addEventListener("change", async () => {
   const file = $("qrFile").files?.[0];
   $("qrFile").value = "";
   if (!file) return;
-  $("loginErr").textContent = "Membaca QR…";
+  $("loginErr").textContent = "Reading QR…";
   const payload = await decodeQrFromImage(file);
   const token = tokenFromQrPayload(payload);
   if (!token) {
-    $("loginErr").textContent = "QR tidak terbaca. Coba foto ulang atau ketik token.";
+    $("loginErr").textContent = "Cannot read QR. Retake the photo or type the token.";
     return;
   }
   if (!(await loginWithToken(token))) {
-    $("loginErr").textContent = "QR terbaca, tetapi token ditolak.";
+    $("loginErr").textContent = "QR read, but the token was rejected.";
   }
 });
