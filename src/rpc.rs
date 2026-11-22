@@ -66,6 +66,9 @@ impl RpcProcess {
         resume: Option<&str>,
     ) -> Result<Arc<Self>> {
         let mut command = Command::new(omp_bin);
+        if let Some(path) = crate::config::shell_path() {
+            command.env("PATH", path);
+        }
         command
             .arg("--mode")
             .arg("rpc-ui")

@@ -59,7 +59,8 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn path(data_dir: &std::path::Path) -> PathBuf {
+    
+pub fn path(data_dir: &std::path::Path) -> PathBuf {
         data_dir.join("settings.json")
     }
 
@@ -671,4 +672,24 @@ fn restrict(path: &PathBuf) {
         use std::os::unix::fs::PermissionsExt;
         let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
     }
+}
+
+/// PATH as the user's login shell sees it. The app is started by launchd,
+/// which gives it `/usr/bin:/bin:/usr/sbin:/sbin` — so anything installed with
+/// Homebrew, nvm, bun, or a package manager (`npx`, `adb`, `emulator`) is
+/// invisible to child processes unless we borrow it from the shell.
+pub fn shell_path() -> Option<String> {
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+    let out = std::process::Command::new(shell)
+        .args(["-lc", "printf %s \"$PATH\""])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if path.is_empty() || !path.contains('/') {
+        return None;
+    }
+    Some(path)
 }

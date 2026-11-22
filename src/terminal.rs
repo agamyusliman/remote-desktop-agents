@@ -121,6 +121,12 @@ pub async fn run(mut socket: WebSocket, target: Target, cols: u16, rows: u16) {
     let mut cmd = CommandBuilder::new(tmux.as_os_str());
     cmd.arg("new-session");
     cmd.arg("-A");
+    // A tmux server started by launchd inherits a bare PATH. Pass the login
+    // shell's PATH into the session so tools the agent shells out to resolve.
+    if let Some(path) = crate::config::shell_path() {
+        cmd.arg("-e");
+        cmd.arg(format!("PATH={path}"));
+    }
     // Attach when this exact target already runs, otherwise create it.
     cmd.arg("-s");
     cmd.arg(session.as_str());
