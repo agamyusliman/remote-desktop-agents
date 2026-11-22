@@ -201,6 +201,7 @@ async fn run_server(
         .route("/api/ping", get(api_ping))
         .route("/api/sessions", get(api_sessions))
         .route("/api/project-sessions", get(api_project_sessions))
+        .route("/api/tmux", get(api_tmux))
         .route("/api/session-label", post(session_label))
         .route("/api/files", get(files_list))
         .route("/api/browse", get(api_browse))
@@ -1839,6 +1840,8 @@ struct TermQuery {
     rows: Option<u16>,
     project: Option<String>,
     resume: Option<String>,
+    /// Attach to an existing tmux session instead of spawning a new one.
+    session: Option<String>,
 }
 
 async fn ws_term(
@@ -1864,16 +1867,29 @@ async fn ws_term(
     } else {
         state.pairing.note_session();
     }
+    let attach = query
+        .session
+        .filter(|name| terminal::session_exists(name));
     let target = terminal::Target {
         session: project.session,
         cwd: PathBuf::from(project.path),
         omp: state.cfg.omp_bin.clone(),
-        resume: query.resume,
+        resume: if attach.is_some() { None } else { query.resume },
+        attach,
     };
     ws.on_upgrade(move |socket| terminal::run(socket, target, cols, rows))
 }
 
 /// Session list for the current project, used by the terminal empty state.
+/// Terminals already running on this Mac, so the phone can join one instead of
+/// starting a second agent with a separate context.
+async fn api_tmux(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if !allow(&state, &headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    Json(json!({ "sessions": terminal::list_tmux_sessions() })).into_response()
+}
+
 async fn api_project_sessions(
     State(state): State<AppState>,
     headers: HeaderMap,

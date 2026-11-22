@@ -33,6 +33,62 @@ pub struct Target {
     pub omp: PathBuf,
     /// When set, omp resumes this session file instead of starting a new one.
     pub resume: Option<String>,
+    /// Attach to this tmux session instead of creating a project-scoped one.
+    /// This is what lets the phone drive the CLI that is already running on
+    /// the Mac, so the agent keeps one context and its tools stay visible.
+    pub attach: Option<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct TmuxSession {
+    pub name: String,
+    pub cwd: String,
+    pub command: String,
+}
+
+/// Sessions currently running on this Mac. The UI lists them so the phone can
+/// join a terminal the user already has open instead of spawning a stranger.
+pub fn list_tmux_sessions() -> Vec<TmuxSession> {
+    let Ok(out) = std::process::Command::new(tmux_bin())
+        .args([
+            "list-sessions",
+            "-F",
+            "#{session_name}\t#{pane_current_path}\t#{pane_current_command}",
+        ])
+        .output()
+    else {
+        return Vec::new();
+    };
+    if !out.status.success() {
+        return Vec::new();
+    }
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|line| {
+            let mut parts = line.split('\t');
+            let name = parts.next()?.trim();
+            if name.is_empty() {
+                return None;
+            }
+            Some(TmuxSession {
+                name: name.to_string(),
+                cwd: parts.next().unwrap_or("").to_string(),
+                command: parts.next().unwrap_or("").to_string(),
+            })
+        })
+        .collect()
+}
+
+/// True only for a session that currently exists, so a crafted `session` query
+/// cannot point tmux at something else.
+pub fn session_exists(name: &str) -> bool {
+    if name.is_empty() || name.len() > 64 {
+        return false;
+    }
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.') {
+        return false;
+    }
+    list_tmux_sessions().iter().any(|s| s.name == name)
 }
 
 pub async fn run(mut socket: WebSocket, target: Target, cols: u16, rows: u16) {
@@ -58,7 +114,10 @@ pub async fn run(mut socket: WebSocket, target: Target, cols: u16, rows: u16) {
     } else {
         PathBuf::from("omp")
     };
-    let session = session_name(&target.session, target.resume.as_deref());
+    let session = match target.attach.as_deref() {
+        Some(name) if session_exists(name) => name.to_string(),
+        _ => session_name(&target.session, target.resume.as_deref()),
+    };
     let mut cmd = CommandBuilder::new(tmux.as_os_str());
     cmd.arg("new-session");
     cmd.arg("-A");

@@ -23,6 +23,7 @@ function loadPrefs() {
 
 const state = {
   started: false,
+  attachTmux: null,
   page: "home",
   view: (() => {
     const saved = localStorage.getItem("ra.view");
@@ -652,6 +653,7 @@ function openProject(id) {
   updateProjectLabels();
   closeTerminal();
   state.resumeSession = null;
+  state.attachTmux = null;
   go("remote");
   // The CLI view starts with a picker: resume a session or start a new one.
   if (state.view === "term" || state.view === "split") {
@@ -1425,6 +1427,42 @@ async function showTermEmpty(switching = termSwitcher) {
     row.append(open, actions);
     list.append(row);
   }
+
+  // Terminals already running on the Mac. Joining one keeps a single agent
+  // context, so tools it launches stay visible on the screen stream.
+  try {
+    const res = await api("/api/tmux");
+    if (res.ok) {
+      const data = await res.json();
+      const running = (data.sessions || []).filter((s) => {
+        const cmd = (s.command || "").split("/").pop();
+        return cmd === "omp" || cmd === "node" || cmd === "bash" || cmd === "zsh";
+      });
+      if (running.length) {
+        const label = document.createElement("div");
+        label.className = "te-label te-label-gap";
+        label.textContent = "Running on this Mac";
+        list.append(label);
+        for (const sess of running) {
+          const row = document.createElement("div");
+          row.className = "te-session";
+          const open = document.createElement("button");
+          open.type = "button";
+          open.className = "te-open";
+          const name = document.createElement("span");
+          name.className = "ts-name";
+          name.textContent = `⌗ ${sess.name}`;
+          const where = document.createElement("span");
+          where.className = "ts-date";
+          where.textContent = (sess.cwd || "").replace(/^\/Users\/[^/]+/, "~");
+          open.append(name, where);
+          open.addEventListener("click", () => startTerminalFromPicker(null, sess.name));
+          row.append(open);
+          list.append(row);
+        }
+      }
+    }
+  } catch {}
 }
 
 /// Rename is a label only: the .jsonl file keeps its name so omp can still
@@ -1490,9 +1528,10 @@ $("btnSessions")?.addEventListener("click", () => {
 });
 
 /// Start (or resume) the terminal from the session picker.
-function startTerminalFromPicker(resumePath) {
+function startTerminalFromPicker(resumePath, tmuxSession = null) {
   hideTermEmpty();
   state.resumeSession = resumePath || null;
+  state.attachTmux = tmuxSession || null;
   try {
     // Remember the chosen session per project: a dropped socket, a reload or a
     // layout switch must reattach it instead of dumping the user on the picker.
@@ -1543,8 +1582,11 @@ function connectTerminal() {
   const cols = term.cols;
   const rows = term.rows;
   const project = encodeURIComponent(state.projectId || "");
-  const resume = state.resumeSession ? `&resume=${encodeURIComponent(state.resumeSession)}` : "";
-  const ws = new WebSocket(wsUrl(`/ws/term?cols=${cols}&rows=${rows}&project=${project}${resume}`));
+  const resume = !state.attachTmux && state.resumeSession
+    ? `&resume=${encodeURIComponent(state.resumeSession)}`
+    : "";
+  const attach = state.attachTmux ? `&session=${encodeURIComponent(state.attachTmux)}` : "";
+  const ws = new WebSocket(wsUrl(`/ws/term?cols=${cols}&rows=${rows}&project=${project}${resume}${attach}`));
   ws.binaryType = "arraybuffer";
   state.termWs = ws;
   ws.onopen = () => {

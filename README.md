@@ -48,6 +48,7 @@ More in [docs/screenshots.md](docs/screenshots.md).
 | **Screen** | ScreenCaptureKit via `scap`, JPEG ~5 fps over WebSocket, input via `enigo` |
 | **Agent chat** | RPC bridge (`omp --mode rpc-ui`), model picker, session resume, ask form |
 | **Terminal** | real PTY via `portable-pty` + tmux + xterm.js |
+| **Attach** | join a terminal already running on the Mac, so the phone drives the same agent, not a second one |
 | **Sessions** | list, resume, rename, and delete sessions without leaving the project |
 | **Projects** | allowlisted library; add by picking a folder, remove from the list |
 | **Files** | tree explorer, code viewer, markdown preview |
